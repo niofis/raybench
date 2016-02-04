@@ -145,9 +145,10 @@ struct sphere
   struct v3 center;
   float radius;
   struct v3 color;
+  bool is_light;
 };
 
-const uint_fast16_t spheres_count = 2;
+const uint_fast16_t spheres_count = 8;
 struct sphere spheres[spheres_count];
 
 struct sphere sphere_new(struct v3 center, float radius, struct v3 color)
@@ -163,38 +164,37 @@ struct hit
   struct v3 normal;
 };
 
-bool hit_sphere(const struct sphere* sp, const struct ray* ray, struct hit* res)
+bool hit_sphere(const struct sphere* sp, const struct ray* ray, struct hit* hit)
 {
   struct v3 oc;
   v3_sub(&oc, &ray->origin, &sp->center);
 
   float a = v3_dot(&ray->direction, &ray->direction);
-  float b = -2.0f * v3_dot(&oc, &ray->direction);
+  float b = v3_dot(&oc, &ray->direction);
   float c = v3_dot(&oc, &oc) - (sp->radius * sp->radius);
-  float dis = b*b - 4.0f*a*c;
+  float dis = b*b - a*c;
 
   if(dis > 0.0f)
   {
     float e = sqrt(dis);
-    float denom = 2.0f * a;
-    float t = (b - e) / denom;
+    float t = (-b - e) / a;
 
     if(t > 0.007f)
     {
-      res->dist = t;
-      ray_point(&res->point, ray, t);
-      v3_sub(&res->normal, &res->point, &sp->center);
-      v3_mkunit(&res->normal, &res->normal);
+      hit->dist = t;
+      ray_point(&hit->point, ray, t);
+      v3_sub(&hit->normal, &hit->point, &sp->center);
+      v3_mkunit(&hit->normal, &hit->normal);
       return true;
     }
 
-    t = (b + e) / denom;
+    t = (-b + e) / a;
     if(t > 0.007f)
     {
-      res->dist = t;
-      ray_point(&res->point, ray, t);
-      v3_sub(&res->normal, &res->point, &sp->center);
-      v3_mkunit(&res->normal, &res->normal);
+      hit->dist = t;
+      ray_point(&hit->point, ray, t);
+      v3_sub(&hit->normal, &hit->point, &sp->center);
+      v3_mkunit(&hit->normal, &hit->normal);
       return true;
     }
 
@@ -217,7 +217,7 @@ struct v3 rnd_dome(const struct v3* normal)
     v3_mkunit(&p, &p);
     
     d = v3_dot(&p, normal);
-  } while(d < 0);
+  } while(d <= 0);
 
   return p;
 }
@@ -226,19 +226,18 @@ struct v3 trace(struct ray* ray, uint_fast16_t depth)
 {
   struct v3 color = {0};
   bool did_hit = false;
-
-  float min = 1e15;
-  struct hit hit = {0};
-  struct sphere *csp;
+  struct hit hit = {.dist = 1e15};
+  struct sphere sp;
   for(uint_fast16_t i = 0 ; i < spheres_count; ++i)
   {
-    if (hit_sphere(&spheres[i], ray, &hit))
+    struct hit res;
+    if (hit_sphere(&spheres[i], ray, &res))
     {
-      if(hit.dist > 0.0001f && hit.dist < min) {
-        csp = &spheres[i];
-        min = hit.dist;
+      if(res.dist > 0.0001f && res.dist < hit.dist) {
+        sp = spheres[i];
         did_hit = true;
-        color = csp->color;
+        color = spheres[i].color;
+        hit = res;
       }
     }
   }
@@ -246,34 +245,31 @@ struct v3 trace(struct ray* ray, uint_fast16_t depth)
 
   if(did_hit == true && depth < MAX_DEPTH)
   {
-    struct ray nray;
-    nray.origin = hit.point;
-    nray.direction = rnd_dome(&hit.normal);
-    struct v3 ncolor = {0};
-    ncolor = trace(&nray, depth + 1);
-    //v3_muls(&ncolor, &ncolor, 0.2f);
-    //v3_muls(&color, &color, 0.8f);
-    //v3_add(&color, &color, &ncolor);
-    v3_mul(&color, &color, &ncolor);
+    if(sp.is_light == false)
+    {
+      //The object is not a light, keep going
+      struct ray nray;
+      nray.origin = hit.point;
+      nray.direction = rnd_dome(&hit.normal);
+      struct v3 ncolor = {0};
+      ncolor = trace(&nray, depth + 1);
+      float at = v3_dot(&nray.direction, &hit.normal);
+      v3_muls(&ncolor, &ncolor, at);
+      //v3_muls(&color, &color, 0.8f);
+      //v3_add(&color, &color, &ncolor);
+      v3_mul(&color, &color, &ncolor);
+    }
+    else
+    {
+      //The object is a light no need to keep bouncing
+      color = sp.color;
+    }
   }
 
-  if(did_hit == false)
-  {
-
-    struct v3 dir = ray->direction;
-
-    float t = 0.5f * (dir.y + 1.0f);
-
-
-    struct v3 a = v3_new(1.0f,1.0f,1.0f);
-    v3_muls(&a, &a, 1.0f - t);
-
-    struct v3 b = v3_new(0.5f, 0.7f, 1.0f);
-    v3_muls(&b, &b, t);
-
-
-    v3_add(&color, &a, &b);
-
+  if(did_hit == false || depth >= MAX_DEPTH) {
+    color.x = 0;
+    color.y = 0;
+    color.z = 0;
   }
 
   return color;
@@ -305,8 +301,23 @@ void writeppm(struct v3 *data)
 
 int main (int argc, char** argv)
 {
-  spheres[0] = sphere_new(v3_new(0.0f, 5.0f, -1.0f), 4.0f,v3_new(1.0f,0.0f,0.0f));
-  spheres[1] = sphere_new(v3_new(0.0f, -999.0f, 0.0f), 1000.f, v3_new(1.0f,1.0f,1.0f));
+  //floor
+  spheres[0] = sphere_new(v3_new(0.0f, -10002.0f, 0.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
+  //Left
+  spheres[1] = sphere_new(v3_new(-10012.0f, 0.0f, 0.0f), 9999.f, v3_new(1.0f,0.0f,0.0f));
+  //Right
+  spheres[2] = sphere_new(v3_new(10012.0f, 0.0f, 0.0f), 9999.f, v3_new(0.0f,1.0f,0.0f));
+  //Back
+  spheres[3] = sphere_new(v3_new(0.0f, 0.0f, -10020.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
+  //Ceiling
+  spheres[4] = sphere_new(v3_new(0.0f, 10012.0f, 0.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
+  //Light
+  spheres[5] = sphere_new(v3_new(0.0f, 17.0f, 0.0f), 5.0f, v3_new(1.0f,1.0f,1.0f));
+  spheres[5].is_light = true;
+  //Light
+  
+  spheres[6] = sphere_new(v3_new(0.0f, 5.0f, -1.0f), 4.0f,v3_new(1.0f,0.0f,0.0f));
+  spheres[7] = sphere_new(v3_new(5.0f, 5.0f, -1.0f), 2.0f,v3_new(0.0f,1.0f,0.0f));
 
   struct v3 *data;
   data = malloc(HEIGHT * WIDTH * sizeof(struct v3));
