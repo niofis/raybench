@@ -312,12 +312,12 @@ int main (int argc, char** argv)
   //Ceiling
   spheres[4] = sphere_new(v3_new(0.0f, 10012.0f, 0.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
   //Light
-  spheres[5] = sphere_new(v3_new(0.0f, 17.0f, 0.0f), 5.0f, v3_new(1.0f,1.0f,1.0f));
-  spheres[5].is_light = true;
-  //Light
-  
+  spheres[4].is_light = true;
+
+  //Others
+  spheres[5] = sphere_new(v3_new(-5.0f, 0.0f, 2.0f), 2.0f, v3_new(1.0f,1.0f,0.0f));
   spheres[6] = sphere_new(v3_new(0.0f, 5.0f, -1.0f), 4.0f,v3_new(1.0f,0.0f,0.0f));
-  spheres[7] = sphere_new(v3_new(5.0f, 5.0f, -1.0f), 2.0f,v3_new(0.0f,1.0f,0.0f));
+  spheres[7] = sphere_new(v3_new(8.0f, 5.0f, -1.0f), 2.0f,v3_new(0.0f,1.0f,0.0f));
 
   struct v3 *data;
   data = malloc(HEIGHT * WIDTH * sizeof(struct v3));
