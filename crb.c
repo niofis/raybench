@@ -6,8 +6,8 @@
 
 const uint_fast16_t WIDTH = 1280;
 const uint_fast16_t HEIGHT = 720;
-const uint_fast16_t SAMPLES = 100;
-const uint_fast16_t MAX_DEPTH = 10;
+const uint_fast16_t SAMPLES = 50;
+const uint_fast16_t MAX_DEPTH = 5;
 
 struct v3
 {
@@ -317,7 +317,7 @@ int main (int argc, char** argv)
   //Others
   spheres[5] = sphere_new(v3_new(-5.0f, 0.0f, 2.0f), 2.0f, v3_new(1.0f,1.0f,0.0f));
   spheres[6] = sphere_new(v3_new(0.0f, 5.0f, -1.0f), 4.0f,v3_new(1.0f,0.0f,0.0f));
-  spheres[7] = sphere_new(v3_new(8.0f, 5.0f, -1.0f), 2.0f,v3_new(0.0f,1.0f,0.0f));
+  spheres[7] = sphere_new(v3_new(8.0f, 5.0f, -1.0f), 2.0f,v3_new(0.0f,0.0f,1.0f));
 
   struct v3 *data;
   data = malloc(HEIGHT * WIDTH * sizeof(struct v3));
