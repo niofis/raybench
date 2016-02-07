@@ -16,8 +16,6 @@ struct v3
   float z;
 };
 
-static const struct v3 v3zero = {0};
-
 struct v3 v3_new(float x, float y, float z)
 {
   struct v3 r = {
@@ -99,8 +97,6 @@ struct ray
   struct v3 origin;
   struct v3 direction;
 };
-
-static const struct ray rayzero = {0};
 
 void ray_point(struct v3* dest, const struct ray* r, float t)
 {
@@ -204,6 +200,9 @@ bool hit_sphere(const struct sphere* sp, const struct ray* ray, struct hit* hit)
   return false;
 }
 
+//Creates a random unit vector on the top half dome
+//of a unit sphere around the 'normal' vector passed
+//as parameter
 struct v3 rnd_dome(const struct v3* normal)
 {
   struct v3 p;
@@ -242,7 +241,6 @@ struct v3 trace(struct ray* ray, uint_fast16_t depth)
     }
   }
 
-
   if(did_hit == true && depth < MAX_DEPTH)
   {
     if(sp.is_light == false)
@@ -255,8 +253,6 @@ struct v3 trace(struct ray* ray, uint_fast16_t depth)
       ncolor = trace(&nray, depth + 1);
       float at = v3_dot(&nray.direction, &hit.normal);
       v3_muls(&ncolor, &ncolor, at);
-      //v3_muls(&color, &color, 0.8f);
-      //v3_add(&color, &color, &ncolor);
       v3_mul(&color, &color, &ncolor);
     }
     else
