@@ -144,7 +144,7 @@ struct sphere
   bool is_light;
 };
 
-#define spheres_count 8;
+#define spheres_count 8
 struct sphere spheres[spheres_count];
 
 struct sphere sphere_new(struct v3 center, float radius, struct v3 color)
