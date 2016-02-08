@@ -144,9 +144,6 @@ struct sphere
   bool is_light;
 };
 
-const uint_fast16_t spheres_count = 8;
-struct sphere spheres[spheres_count];
-
 struct sphere sphere_new(struct v3 center, float radius, struct v3 color)
 {
   struct sphere s = {.center = center, .radius = radius, .color = color};
@@ -294,6 +291,9 @@ void writeppm(struct v3 *data)
   fclose(ppm);
 
 }
+
+const uint_fast16_t spheres_count = 8;
+struct sphere spheres[8];
 
 int main (int argc, char** argv)
 {
