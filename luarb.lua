@@ -1,8 +1,11 @@
 local io = require("io")
 local math = require("math")
 
-local WIDTH = 1280
-local HEIGHT = 720
+local WIDTH = 128
+local HEIGHT = 72
+local SAMPLES = 1
+local MAX_DEPTH = 5
+local spheres = {}
 
 local Vector3 = {}
 Vector3.__index = Vector3
@@ -11,9 +14,9 @@ function Vector3.new (x, y, z)
   local v = {}
   setmetatable(v, Vector3)
 
-  v.x = x || 0
-  v.y = y || 0
-  v.z = z || 0
+  v.x = x or 0
+  v.y = y or 0
+  v.z = z or 0
 
   return v
 end
@@ -45,7 +48,7 @@ function Vector3:__mul (v)
     r.x = self.x * v.x
     r.y = self.y * v.y
     r.z = self.z * v.z
-  else if type(v) == "number" then
+  elseif type(v) == "number" then
     r.x = self.x * v
     r.y = self.y * v
     r.z = self.z * v
@@ -61,7 +64,7 @@ function Vector3:__div (v)
     r.x = self.x / v.x
     r.y = self.y / v.y
     r.z = self.z / v.z
-  else if type(v) == "number" then
+  elseif type(v) == "number" then
     r.x = self.x / v
     r.y = self.y / v
     r.z = self.z / v
@@ -88,8 +91,8 @@ function Vector3:norm ()
   return r
 end
 
-function Vector3:mkunit ()
-  local n = self.norm()
+function Vector3:unit ()
+  local n = self:norm()
   local r = self / n
 
   return r
@@ -103,54 +106,16 @@ function Ray.new (ops)
 
   setmetatable(r, Ray)
 
-  r.origin = ops.origin || Vector3.new()
-  r.direction = ops.direction || Vector3.new()
+  ops = ops or {}
+
+  r.origin = ops.origin or Vector3.new()
+  r.direction = ops.direction or Vector3.new()
 
   return r
 end
 
 function Ray:point (dist)
-  local r = Vector3.new()
-
-  r.x = self.origin + self.direction * dist
-
-  return r
-end
-
-local Camera = {}
-Camera.__index = Camera
-
-function Camera.new (ops)
-  local c = {}
-
-  setmetatable(c, Camera)
-
-  c.eye = ops.eye || Vector3.new(0, 4.5, 75)
-  c.lt = ops.lt || Vector3.new(-8, 9, 50)
-  c.rt = ops.rt || Vector3.new(8, 9, 50)
-  c.lb = ops.lb || Vector3.new(-8, 0, 50)
-
-  return c
-end
-
-
-local Sphere = {}
-Sphere.__index = Sphere
-
-function Sphere.new (ops)
-  local s = {}
-
-  setmetatable(s, Sphere)
-
-  s.center = ops.center || Vector3.new()
-  s.radius = ops.radius || 1
-  s.color = ops.color || Vector3.new(1.0, 0, 0)
-  s.is_light = ops.is_light || true
-
-  return s
-end
-
-function Sphere:hit (ray)
+  return self.origin + self.direction * dist
 end
 
 local Hit = {}
@@ -161,14 +126,147 @@ function Hit.new (ops)
 
   setmetatable(h, Hit)
 
-  h.dist = ops.dist || 0
-  h.point = ops.point || Vector.new()
-  h.normal = ops.normal || Vector.new()
+  ops = ops or {}
+
+  h.dist = ops.dist or 0
+  h.point = ops.point or Vector3.new()
+  h.normal = ops.normal or Vector3.new()
 
   return h
 end
 
+local Camera = {}
+Camera.__index = Camera
+
+function Camera.new (ops)
+  local c = {}
+
+  setmetatable(c, Camera)
+
+  ops = ops or {}
+
+  c.eye = ops.eye or Vector3.new(0, 4.5, 75)
+  c.lt = ops.lt or Vector3.new(-8, 9, 50)
+  c.rt = ops.rt or Vector3.new(8, 9, 50)
+  c.lb = ops.lb or Vector3.new(-8, 0, 50)
+
+  return c
+end
+
+
+
+local Sphere = {}
+Sphere.__index = Sphere
+
+function Sphere.new (ops)
+  local s = {}
+
+  setmetatable(s, Sphere)
+
+  ops = ops or {}
+
+  s.center = ops.center or Vector3.new()
+  s.radius = ops.radius or 1
+  s.color = ops.color or Vector3.new(1.0, 0, 0)
+  s.is_light = ops.is_light or true
+
+  return s
+end
+
+function Sphere:hit (ray)
+  local oc = ray.origin - self.center
+  local a = ray.direction:dot(ray.direction)
+  local b = oc:dot(ray.direction)
+  local c = oc:dot(oc) - self.radius * self.radius
+  local dis = b * b - a * c
+
+  if dis > 0 then
+    local e = math.sqrt(dis)
+
+    local t = (-b - e) / a
+    if t > 0.007 then
+      local hit = Hit.new()
+
+      hit.dist = t
+      hit.point = ray:point(t)
+      hit.normal = (hit.point - self.center):unit()
+
+      return hit
+    end
+
+    t = (-b + e) / a
+    if t > 0.007 then
+      local hit = Hit.new()
+
+      hit.dist = t
+      hit.point = ray:point(t)
+      hit.normal = (hit.point - self.center):unit()
+
+      return hit
+    end
+
+    return nil
+  end
+
+  return nil
+end
+
+local function rnd_dome (nrml)
+  local p = Vector3.new()
+  local d
+
+  repeat
+    p.x = 2 * math.random() - 1
+    p.y = 2 * math.random() - 1
+    p.z = 2 * math.random() - 1
+
+    p = p:unit()
+
+    d = p:dot(nrml)
+  until d < 0
+
+  return p
+end
+
 local function trace (ray, depth)
+  local color = Vector3.new()
+  local did_hit = false
+  local hit = Hit.new({dist = 1E+15})
+  local sp
+
+  for _,s in pairs(spheres) do
+    local lh = s:hit(ray)
+
+    if lh ~= nil and lh.dist > 0.0001 and lh.dist < hit.dist then
+      sp = s
+      did_hit = true
+      color = s.color
+      hit = lh
+    end
+  end
+
+  if did_hit == true and depth < MAX_DEPTH then
+    if sp.is_light == false then
+      local nray = Ray.new()
+      
+      nray.origin = hit.point
+      nray.direction = rnd_dome(hit.normal)
+
+      local ncolor = trace(nray, depth + 1)
+
+      local at = nray.direction:dot(hit.normal)
+
+      color = color * ncolor * at
+    else
+      color = sp.color
+    end
+  end
+
+  if did_hit == false or depth >= MAX_DEPTH then
+    color = Vector3.new()
+  end
+
+  return color
 end
 
 local function writeppm (data)
@@ -190,12 +288,61 @@ local function writeppm (data)
 end
 
 local function main ()
+
+  --Floor
+  spheres[0] = Sphere.new(Vector3.new(0, -10002, 0), 9999, Vector3.new(1,1,1));
+  --Left
+  spheres[1] = Sphere.new(Vector3.new(-10012, 0, 0), 9999, Vector3.new(1,0,0));
+  --Right
+  spheres[2] = Sphere.new(Vector3.new(10012, 0, 0), 9999, Vector3.new(0,1,0));
+  --Back
+  spheres[3] = Sphere.new(Vector3.new(0, 0, -10020), 9999, Vector3.new(1,1,1));
+  --Ceiling
+  spheres[4] = Sphere.new(Vector3.new(0, 10012, 0), 9999, Vector3.new(1,1,1));
+  --Light
+  spheres[4].is_light = true;
+
+  --Others
+  spheres[5] = Sphere.new(Vector3.new(-5, 0, 2), 2, Vector3.new(1,1,0));
+  spheres[6] = Sphere.new(Vector3.new(0, 5, -1), 4,Vector3.new(1,0,0));
+  spheres[7] = Sphere.new(Vector3.new(8, 5, -1), 2,Vector3.new(0,0,1));
+
+
   local data = {}
+
+  local cam = Camera.new()
+
+  local vdu = (cam.rt - cam.lt) / WIDTH
+  local vdv = (cam.lb - cam.lt) / HEIGHT
+
 
   for y = 0, HEIGHT - 1 do
     data[y] = {}
     for x = 0, WIDTH - 1 do
-      data[y][x] = Vector3.new(0, 1.0, 0)
+      local color = Vector3.new()
+      local ray = Ray.new()
+
+      ray.origin = cam.eye
+
+      for i = 0, SAMPLES-1 do
+
+        ray.direction = cam.lt +
+          (vdu * (x + math.random())) +
+          (vdv * (y + math.random()))
+
+
+        ray.direction = ray.direction - ray.origin
+
+        ray.direction = ray.direction:unit()
+
+        local u = trace(ray, 0)
+
+        color = color + u
+      end
+
+      color = color / SAMPLES
+
+      data[y][x] = color
     end
   end
 
