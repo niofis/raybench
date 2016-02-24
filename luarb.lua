@@ -1,9 +1,9 @@
 local io = require("io")
 local math = require("math")
 
-local WIDTH = 128
-local HEIGHT = 72
-local SAMPLES = 1
+local WIDTH = 1280
+local HEIGHT = 720
+local SAMPLES = 50
 local MAX_DEPTH = 5
 local spheres = {}
 
@@ -168,7 +168,7 @@ function Sphere.new (ops)
   s.center = ops.center or Vector3.new()
   s.radius = ops.radius or 1
   s.color = ops.color or Vector3.new(1.0, 0, 0)
-  s.is_light = ops.is_light or true
+  s.is_light = ops.is_light
 
   return s
 end
@@ -223,7 +223,7 @@ local function rnd_dome (nrml)
     p = p:unit()
 
     d = p:dot(nrml)
-  until d < 0
+  until d >= 0
 
   return p
 end
@@ -246,7 +246,7 @@ local function trace (ray, depth)
   end
 
   if did_hit == true and depth < MAX_DEPTH then
-    if sp.is_light == false then
+    if sp.is_light ~= true then
       local nray = Ray.new()
       
       nray.origin = hit.point
@@ -257,8 +257,6 @@ local function trace (ray, depth)
       local at = nray.direction:dot(hit.normal)
 
       color = color * ncolor * at
-    else
-      color = sp.color
     end
   end
 
@@ -290,22 +288,52 @@ end
 local function main ()
 
   --Floor
-  spheres[0] = Sphere.new(Vector3.new(0, -10002, 0), 9999, Vector3.new(1,1,1));
+  spheres[0] = Sphere.new{
+    center = Vector3.new(0, -10002, 0),
+    radius = 9999,
+    color = Vector3.new(1,1,1)
+  }
   --Left
-  spheres[1] = Sphere.new(Vector3.new(-10012, 0, 0), 9999, Vector3.new(1,0,0));
+  spheres[1] = Sphere.new{
+    center = Vector3.new(-10012, 0, 0),
+    radius = 9999, 
+    color = Vector3.new(1,0,0)
+  }
   --Right
-  spheres[2] = Sphere.new(Vector3.new(10012, 0, 0), 9999, Vector3.new(0,1,0));
+  spheres[2] = Sphere.new{
+    center = Vector3.new(10012, 0, 0),
+    radius = 9999,
+    color = Vector3.new(0,1,0)
+  }
   --Back
-  spheres[3] = Sphere.new(Vector3.new(0, 0, -10020), 9999, Vector3.new(1,1,1));
+  spheres[3] = Sphere.new{
+    center = Vector3.new(0, 0, -10020), 
+    radius = 9999,
+    color = Vector3.new(1,1,1)
+  }
   --Ceiling
-  spheres[4] = Sphere.new(Vector3.new(0, 10012, 0), 9999, Vector3.new(1,1,1));
-  --Light
-  spheres[4].is_light = true;
-
+  spheres[4] = Sphere.new{
+    center = Vector3.new(0, 10012, 0),
+    radius = 9999,
+    color = Vector3.new(1,1,1),
+    is_light = true
+  }
   --Others
-  spheres[5] = Sphere.new(Vector3.new(-5, 0, 2), 2, Vector3.new(1,1,0));
-  spheres[6] = Sphere.new(Vector3.new(0, 5, -1), 4,Vector3.new(1,0,0));
-  spheres[7] = Sphere.new(Vector3.new(8, 5, -1), 2,Vector3.new(0,0,1));
+  spheres[5] = Sphere.new{
+    center = Vector3.new(-5, 0, 2),
+    radius = 2,
+    color = Vector3.new(1,1,0)
+  }
+  spheres[6] = Sphere.new{
+    center = Vector3.new(0, 5, -1),
+    radius = 4,
+    color = Vector3.new(1,0,0)
+  }
+  spheres[7] = Sphere.new{
+    center = Vector3.new(8, 5, -1),
+    radius = 2,
+    color = Vector3.new(0,0,1)
+  }
 
 
   local data = {}
@@ -314,7 +342,6 @@ local function main ()
 
   local vdu = (cam.rt - cam.lt) / WIDTH
   local vdv = (cam.lb - cam.lt) / HEIGHT
-
 
   for y = 0, HEIGHT - 1 do
     data[y] = {}
@@ -335,9 +362,7 @@ local function main ()
 
         ray.direction = ray.direction:unit()
 
-        local u = trace(ray, 0)
-
-        color = color + u
+        color = color + trace(ray, 0)
       end
 
       color = color / SAMPLES
