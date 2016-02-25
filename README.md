@@ -71,3 +71,12 @@ real	2m1.940s
 user	2m1.212s
 sys	0m0.180s
 ```
+Lua (luarb.lua)
+
+```
+$time luajit luarb.lua 
+
+real    225m58.621s
+user    224m2.140s
+sys     0m14.044s
+```
