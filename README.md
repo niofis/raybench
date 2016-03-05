@@ -80,3 +80,12 @@ real    225m58.621s
 user    224m2.140s
 sys     0m14.044s
 ```
+JavaScript (jsrb.js)
+
+```
+$time node jsrb.js 
+
+real    8m49.170s
+user    8m40.620s
+sys     0m4.488s
+```
