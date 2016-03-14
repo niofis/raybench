@@ -89,3 +89,13 @@ real    8m49.170s
 user    8m40.620s
 sys     0m4.488s
 ```
+
+C# (csrb.js)
+
+```
+$time mono csrb.exe 
+
+real    12m18.463s
+user    12m0.392s
+sys     0m11.488s
+```
