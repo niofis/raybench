@@ -1,7 +1,46 @@
 import System.IO
+import System.Random
+import System.IO.Unsafe
 
 width = 1280.0::Float
 height = 720.0::Float
+max_depth = 5::Int
+world = World {
+      camera =  Camera (Vector3 0 4.5 75) (Vector3 (-8) 9 50) (Vector3 8 9 50) (Vector3 (-8) 0 50), 
+      spheres = [
+        Sphere {center = Vector3 0 (-10002) 0, --Floor
+                radius = 9999,
+                color = Vector3 1 1 1,
+                is_light = False},
+        Sphere {center = Vector3 (-10012) 0 0, --Left
+                radius = 9999,
+                color = Vector3 1 0 0,
+                is_light = False},
+        Sphere {center = Vector3 10012 0 0, --Right
+                radius = 9999,
+                color = Vector3 0 1 0,
+                is_light = False},
+        Sphere {center = Vector3 0 0 (-10012), --Back
+                radius = 9999,
+                color = Vector3 1 1 1,
+                is_light = False},
+        Sphere {center = Vector3 0 10012 0, --Ceiling
+                radius = 9999,
+                color = Vector3 1 1 1,
+                is_light = True},
+        Sphere {center = Vector3 (-5) 0 2, --Other
+                radius = 2,
+                color = Vector3 1 1 0,
+                is_light = False},
+        Sphere {center = Vector3 0 5 (-1),
+                radius = 4,
+                color = Vector3 1 0 0,
+                is_light = False},
+        Sphere {center = Vector3 8 5 (-1),
+                radius = 2,
+                color = Vector3 0 0 1,
+                is_light = False}
+      ]}
 
 
 --data Car = Car {company :: String, model :: String, year :: Int} deriving (Show) 
@@ -14,7 +53,7 @@ vdiv (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = Vector3 (x1/x2) (y1/y2) (z1/z2)
 vdivS (Vector3 x1 y1 z1) s = Vector3 (x1/s) (y1/s) (z1/s)
 vdot (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = (x1*x2) + (y1*y2) + (z1*z2)
 vnorm (Vector3 x1 y1 z1) = sqrt ((x1*x1) + (y1*y1) + (z1*z1))
-vnormalize v1 = let nrm = vnorm v1 in v1 `vdivS` nrm
+vnormalize v1 = v1 `vdivS` (vnorm v1)
 
 data Ray = Ray {origin :: Vector3, direction :: Vector3} deriving (Show)
 data Camera = Camera {eye :: Vector3, lt :: Vector3, rt :: Vector3, lb :: Vector3} deriving (Show)
@@ -37,7 +76,7 @@ sphereHit sphere ray =
       c = (oc `vdot`oc) - (radius sphere) * (radius sphere)
       disc = (b * b) - (a * c)
    in if disc <= 0 
-         then Hit 0 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 1 0 0) False
+         then Hit 99999999 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 0 0 0) False
          else let e = sqrt disc
                in let t1 = ((-b) - e) / a
                    in if t1 > 0.007
@@ -51,7 +90,7 @@ sphereHit sphere ray =
                                       let pnt2 = rayGetPoint ray t2
                                           nrml2 = sphereGetNormal sphere pnt2
                                        in Hit t2 pnt2 nrml2 (color sphere) True
-                                       else Hit 0 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 0 1 0) False
+                                       else Hit 99999999 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 0 0 0) False
 
 pixels :: Float -> Float -> [[Pixel]]
 pixels width height =
@@ -60,9 +99,10 @@ pixels width height =
 
 primRays :: Camera -> [[Pixel]] -> [[Ray]]
 primRays (Camera eye lt rt lb) pixels' =
-  let vdu = vdivS (vsub rt lt) width
-      vdv = vdivS (vsub lb lt) height
-      toRay (Pixel x y) = Ray eye (vnormalize (vsub eye (vadd lt (vadd (vmulS vdu x) (vmulS vdv y)))))
+  let vdu = (rt `vsub` lt) `vdivS` width
+      vdv = (lb `vsub` lt) `vdivS` height
+      toRay (Pixel x y) = Ray eye (vnormalize 
+            (vsub (lt `vadd` ((vdu `vmulS` x) `vadd` (vdv `vmulS` y))) eye))
    in
     map (\line -> map toRay line) pixels'
 
@@ -79,6 +119,15 @@ writePPM pixels = do
   hClose file
 
 
+randomUnit:: Float
+randomUnit = unsafePerformIO (getStdRandom (randomR (0.0, 1.0)))
+  
+rndDome :: Vector3 -> Vector3
+rndDome nrml = let p = vnormalize (Vector3 randomUnit randomUnit randomUnit)
+                   d = p `vdot` nrml
+                in if d < 0 then rndDome nrml
+                            else p
+
 closestHit :: [Hit] -> Hit
 closestHit (x:[]) = x
 closestHit (x1:x2:xs)
@@ -86,12 +135,17 @@ closestHit (x1:x2:xs)
   | (distance x1) < (distance x2) = closestHit (x1:xs)
   | otherwise = closestHit (x2:xs)
   
-traceRay :: [Sphere] -> Ray -> Hit
-traceRay spheres ray = closestHit ( map (\s -> sphereHit s ray) spheres)
+traceRay :: Int -> [Sphere] -> Ray -> Hit
+traceRay depth spheres ray = 
+  let hit@(Hit dst pnt nrml clr dh)  = closestHit (map (\s -> sphereHit s ray) spheres)
+   in if dh == False || depth >= max_depth
+         then hit
+         else let nray = Ray pnt (rndDome nrml)
+                  (Hit _ _ _ nclr _) = traceRay (depth + 1) spheres nray
+               in Hit dst pnt nrml (clr `vmul` (nclr `vmulS` ((direction nray) `vdot` nrml))) dh
 
 traceLine :: [Sphere] -> [Ray] -> [Hit]
-traceLine spheres rays = map (traceRay spheres) rays
-
+traceLine spheres rays = map (traceRay 0 spheres) rays
 
 render :: World -> [[Vector3]]
 render (World camera spheres) = 
@@ -102,44 +156,4 @@ render (World camera spheres) =
     map (\line -> map (\(Hit _ _ _ clr _) -> clr) line) hits
    
 main = do
-  let world = World {
-      camera =  Camera (Vector3 0 0.45 75) (Vector3 (-8) 9 50) (Vector3 8 9 50) (Vector3 (-8) 0 50), 
-      spheres = [
-        Sphere {center = Vector3 0 (-10002) 0, --Floor
-                radius = 9999,
-                color = Vector3 1 1 1,
-                is_light = False},
-        Sphere {center = Vector3 (-10002) 0 0, --Left
-                radius = 9999,
-                color = Vector3 1 0 0,
-                is_light = False},
-        Sphere {center = Vector3 10002 0 0, --Right
-                radius = 9999,
-                color = Vector3 0 1 0,
-                is_light = False},
-        Sphere {center = Vector3 0 0 (-10002), --Back
-                radius = 9999,
-                color = Vector3 1 1 1,
-                is_light = False},
-        Sphere {center = Vector3 0 10002 0, --Ceiling
-                radius = 9999,
-                color = Vector3 1 1 1,
-                is_light = True},
-        Sphere {center = Vector3 (-5) 0 2, --Other
-                radius = 2,
-                color = Vector3 1 1 0,
-                is_light = False},
-        Sphere {center = Vector3 0 5 (-1),
-                radius = 4,
-                color = Vector3 1 0 0,
-                is_light = False},
-        Sphere {center = Vector3 8 5 (-1),
-                radius = 2,
-                color = Vector3 0 0 1,
-                is_light = False},
-        Sphere {center = Vector3 0 0 (-1),
-                radius = 2,
-                color = Vector3 0 0 1,
-                is_light = False}
-      ]}
   writePPM $ render world
