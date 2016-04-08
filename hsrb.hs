@@ -20,7 +20,7 @@ data Ray = Ray {origin :: Vector3, direction :: Vector3} deriving (Show)
 data Camera = Camera {eye :: Vector3, lt :: Vector3, rt :: Vector3, lb :: Vector3} deriving (Show)
 data Pixel = Pixel Float Float deriving (Show)
 data Sphere = Sphere {center :: Vector3, radius :: Float, color :: Vector3, is_light :: Bool} deriving (Show)
-data Hit = Hit {distance :: Float, point :: Vector3, normal :: Vector3, hit :: Bool} deriving (Show)
+data Hit = Hit {distance :: Float, point :: Vector3, normal :: Vector3, hitcolor :: Vector3, hit :: Bool} deriving (Show)
 data World = World {camera :: Camera, spheres :: [Sphere]} deriving (Show)
 
 rayGetPoint :: Ray -> Float -> Vector3
@@ -36,45 +36,48 @@ sphereHit sphere ray =
       b = oc `vdot` (direction ray)
       c = (oc `vdot`oc) - (radius sphere) * (radius sphere)
       disc = (b * b) - (a * c)
-   in if disc < 0 then Hit 0 (Vector3 0 0 0) (Vector3 0 0 0) False
-                  else let e = sqrt disc
-                        in let t1 = ((-b) -e) / a
-                            in if t1 > 0.007 then
-                                              let pnt = rayGetPoint ray t1
-                                                  nrml = sphereGetNormal sphere pnt
-                                                 in Hit t1 pnt nrml True
-                                             else let t2 = ((-b) + e) / a
-                                                   in if t2 > 0.007 then
-                                                                      let pnt2 = rayGetPoint ray t2
-                                                                          nrml2 = sphereGetNormal sphere pnt2
-                                                                         in Hit t2 pnt2 nrml2 True
-                                                                    else Hit 0 (Vector3 0 0 0) (Vector3 0 0 0) False
+   in if disc <= 0 
+         then Hit 0 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 1 0 0) False
+         else let e = sqrt disc
+               in let t1 = ((-b) -e) / a
+                   in if t1 > 0.007
+                         then
+                         let pnt = rayGetPoint ray t1
+                             nrml = sphereGetNormal sphere pnt
+                          in Hit t1 pnt nrml (color sphere) True
+                          else let t2 = ((-b) + e) / a
+                                in if t2 > 0.007
+                                      then
+                                      let pnt2 = rayGetPoint ray t2
+                                          nrml2 = sphereGetNormal sphere pnt2
+                                       in Hit t2 pnt2 nrml2 (color sphere) True
+                                       else Hit 0 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 0 0 0) False
 
-pixels :: Float -> Float -> [Pixel]
+pixels :: Float -> Float -> [[Pixel]]
 pixels width height =
-  concat $ map (\y -> map (\x -> (Pixel x y)) [0..(width-1)]) [0..(height-1)]
+  map (\y -> map (\x -> (Pixel x y)) [0..(width-1)]) [0..(height-1)]
 
 
-primRays :: Camera -> [Pixel] -> [Ray]
+primRays :: Camera -> [[Pixel]] -> [[Ray]]
 primRays (Camera eye lt rt lb) pixels' =
   let vdu = vdivS (vsub rt lt) width
       vdv = vdivS (vsub lb lt) height
       toRay (Pixel x y) = Ray eye (vadd (vmulS vdu x) (vmulS vdv y))
    in
-    map toRay pixels'
+    map (\line -> map toRay line) pixels'
 
-toRGBStr (r, g, b) = (show $ floor $ r * 255.99) ++ " " ++ (show $ floor $ g * 255.99) ++ " "  ++ (show $ floor $ b * 255.99) ++ " "
+toRGBStr :: Vector3 -> String
+toRGBStr (Vector3 x y z) = (show $ floor $ x * 255.99) ++ " " ++ (show $ floor $ y * 255.99) ++ " "  ++ (show $ floor $ z * 255.99) ++ " "
 
---writePPM :: [Vector3]
-writePPM pixels' = do
+
+writePPM :: [[Vector3]] -> IO()
+writePPM pixels = do
   file <- openFile "./hsrb.ppm" WriteMode
   let header = "P3\n" ++ show width ++ " " ++ show height ++ "\n255\n"
   hPutStr file header
-  
+  hPutStr file (concat (map (\line -> (concat (map toRGBStr line)) ++ "\n") pixels))
   hClose file
 
-trace :: [Sphere] -> Ray -> Hit
-trace spheres ray = closestHit $ map (\s -> sphereHit s ray) spheres
 
 closestHit :: [Hit] -> Hit
 closestHit (x:[]) = x
@@ -83,12 +86,20 @@ closestHit (x1:x2:xs)
   | (distance x1) < (distance x2) = closestHit (x1:xs)
   | otherwise = closestHit (x2:xs)
   
+traceRay :: [Sphere] -> Ray -> Hit
+traceRay spheres ray = closestHit $ map (\s -> sphereHit s ray) spheres
 
-render :: World -> [Vector3]
+traceLine :: [Sphere] -> [Ray] -> [Hit]
+traceLine spheres rays = map (traceRay spheres) rays
+
+
+render :: World -> [[Vector3]]
 render (World camera spheres) = 
   let pixels' = pixels width height 
       rays = primRays camera pixels'
+      hits = map (traceLine spheres) rays
    in
+    map (\line -> map (\(Hit _ _ _ clr _) -> clr) line) hits
    
 main = do
   let world = World {
