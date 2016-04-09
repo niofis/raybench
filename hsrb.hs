@@ -4,42 +4,44 @@ import System.IO.Unsafe
 
 width = 1280.0::Float
 height = 720.0::Float
+samples = 50::Int
 max_depth = 5::Int
+
 world = World {
       camera =  Camera (Vector3 0 4.5 75) (Vector3 (-8) 9 50) (Vector3 8 9 50) (Vector3 (-8) 0 50), 
       spheres = [
         Sphere {center = Vector3 0 (-10002) 0, --Floor
                 radius = 9999,
                 color = Vector3 1 1 1,
-                is_light = False},
+                isLight = False},
         Sphere {center = Vector3 (-10012) 0 0, --Left
                 radius = 9999,
                 color = Vector3 1 0 0,
-                is_light = False},
+                isLight = False},
         Sphere {center = Vector3 10012 0 0, --Right
                 radius = 9999,
                 color = Vector3 0 1 0,
-                is_light = False},
+                isLight = False},
         Sphere {center = Vector3 0 0 (-10012), --Back
                 radius = 9999,
                 color = Vector3 1 1 1,
-                is_light = False},
+                isLight = False},
         Sphere {center = Vector3 0 10012 0, --Ceiling
                 radius = 9999,
                 color = Vector3 1 1 1,
-                is_light = True},
+                isLight = True},
         Sphere {center = Vector3 (-5) 0 2, --Other
                 radius = 2,
                 color = Vector3 1 1 0,
-                is_light = False},
+                isLight = False},
         Sphere {center = Vector3 0 5 (-1),
                 radius = 4,
                 color = Vector3 1 0 0,
-                is_light = False},
+                isLight = False},
         Sphere {center = Vector3 8 5 (-1),
                 radius = 2,
                 color = Vector3 0 0 1,
-                is_light = False}
+                isLight = False}
       ]}
 
 
@@ -58,9 +60,11 @@ vnormalize v1 = v1 `vdivS` (vnorm v1)
 data Ray = Ray {origin :: Vector3, direction :: Vector3} deriving (Show)
 data Camera = Camera {eye :: Vector3, lt :: Vector3, rt :: Vector3, lb :: Vector3} deriving (Show)
 data Pixel = Pixel Float Float deriving (Show)
-data Sphere = Sphere {center :: Vector3, radius :: Float, color :: Vector3, is_light :: Bool} deriving (Show)
-data Hit = Hit {distance :: Float, point :: Vector3, normal :: Vector3, hitcolor :: Vector3, didHit :: Bool} deriving (Show)
+data Sphere = Sphere {center :: Vector3, radius :: Float, color :: Vector3, isLight :: Bool} deriving (Show)
+data Hit = Hit {distance :: Float, point :: Vector3, normal :: Vector3, hitcolor :: Vector3, sphere :: Sphere} deriving (Show)
 data World = World {camera :: Camera, spheres :: [Sphere]} deriving (Show)
+
+emptyHit = Hit 0 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 0 0 0) (Sphere (Vector3 0 0 0) 0 (Vector3 0 0 0) False)
 
 rayGetPoint :: Ray -> Float -> Vector3
 rayGetPoint (Ray org dir) dist = org `vadd` (dir `vmulS` dist)
@@ -68,7 +72,7 @@ rayGetPoint (Ray org dir) dist = org `vadd` (dir `vmulS` dist)
 sphereGetNormal (Sphere cntr _ _ _) point = let v1 = point `vsub`cntr
                                              in vnormalize v1
 
-sphereHit :: Sphere -> Ray -> Hit
+sphereHit :: Sphere -> Ray -> Maybe Hit
 sphereHit sphere ray =
   let oc = (origin ray) `vsub` (center sphere)
       a = (direction ray) `vdot`(direction ray)
@@ -76,21 +80,21 @@ sphereHit sphere ray =
       c = (oc `vdot`oc) - (radius sphere) * (radius sphere)
       disc = (b * b) - (a * c)
    in if disc <= 0 
-         then Hit 99999999 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 0 0 0) False
+         then Nothing
          else let e = sqrt disc
                in let t1 = ((-b) - e) / a
                    in if t1 > 0.007
                          then
                          let pnt = rayGetPoint ray t1
                              nrml = sphereGetNormal sphere pnt
-                          in Hit t1 pnt nrml (color sphere) True
+                          in Hit t1 pnt nrml (color sphere) sphere
                           else let t2 = ((-b) + e) / a
                                 in if t2 > 0.007
                                       then
                                       let pnt2 = rayGetPoint ray t2
                                           nrml2 = sphereGetNormal sphere pnt2
-                                       in Hit t2 pnt2 nrml2 (color sphere) True
-                                       else Hit 99999999 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 0 0 0) False
+                                       in Hit t2 pnt2 nrml2 (color sphere) sphere
+                                       else Nothing
 
 pixels :: Float -> Float -> [[Pixel]]
 pixels width height =
@@ -119,32 +123,42 @@ writePPM pixels = do
   hClose file
 
 
-randomUnit:: Float
-randomUnit = unsafePerformIO (getStdRandom (randomR (0.0, 1.0)))
-  
-rndDome :: Vector3 -> Vector3
-rndDome nrml = let p = vnormalize (Vector3 randomUnit randomUnit randomUnit)
-                   d = p `vdot` nrml
-                in if d < 0 then rndDome nrml
-                            else p
+rndsD :: [Float]
+rndsD = randomRs (-1.0, 1.0) (mkStdGen 42)
 
-closestHit :: [Hit] -> Hit
+rndsH :: [Float]
+rndsH = randomRs (-0.5, 0.5) (mkStdGen 25)
+
+rndDome :: [Float] -> Vector3 -> Vector3
+rndDome rnds nrml = 
+  let p = vnormalize (Vector3 (head (drop 0 rnds)) (head (drop 1 rnds)) (head (drop 2 rnds)))
+      d = p `vdot` nrml
+   in if d < 0 then rndDome (drop 3 rnds) nrml
+               else p
+
+
+
+closestHit :: [Hit] -> Maybe Hit
 closestHit (x:[]) = x
-closestHit (x1:x2:xs)
-  | (didHit x1) == False = closestHit (x2:xs)
-  | (distance x1) < (distance x2) = closestHit (x1:xs)
+closestHit (Nothing:xs) = closestHit xs
+closestHit (x:Nothing:xs) = closestHit (x:xs)
+closestHit (a@(Just x1):b@(Just x2):xs)
+  | (distance x1) < (distance x2) = closestHit (a:xs)
   | otherwise = closestHit (x2:xs)
-  
-traceRay :: Int -> [Sphere] -> Ray -> Hit
-traceRay depth spheres ray = 
-  let hit@(Hit dst pnt nrml clr dh)  = closestHit (map (\s -> sphereHit s ray) spheres)
-   in if dh == False || depth >= max_depth
-         then hit
-         else let nray = Ray pnt (rndDome nrml)
-                  (Hit _ _ _ nclr _) = traceRay (depth + 1) spheres nray
-               in Hit dst pnt nrml (clr `vmul` (nclr `vmulS` ((direction nray) `vdot` nrml))) dh
 
-traceLine :: [Sphere] -> [Ray] -> [Hit]
+traceRay :: Int -> [Sphere] -> Ray -> Hit
+traceRay depth spheres ray = mapHit $ closestHit (map (\s -> sphereHit s ray) spheres)
+  where
+    mapHit Nothing = emptyHit
+    mapHit (Just hit) = 
+         if depth >= max_depth
+                then emptyHit 
+                else if (isLight $ sphere hit) == true
+                      then hit
+                      else
+
+
+traceLine :: [Sphere] -> [Ray] -> [Maybe Hit]
 traceLine spheres rays = map (traceRay 0 spheres) rays
 
 render :: World -> [[Vector3]]
