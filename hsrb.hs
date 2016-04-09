@@ -1,6 +1,5 @@
 import System.IO
 import System.Random
-import System.IO.Unsafe
 
 width = 1280.0::Float
 height = 720.0::Float
@@ -55,7 +54,7 @@ vdiv (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = Vector3 (x1/x2) (y1/y2) (z1/z2)
 vdivS (Vector3 x1 y1 z1) s = Vector3 (x1/s) (y1/s) (z1/s)
 vdot (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = (x1*x2) + (y1*y2) + (z1*z2)
 vnorm (Vector3 x1 y1 z1) = sqrt ((x1*x1) + (y1*y1) + (z1*z1))
-vnormalize v1 = v1 `vdivS` (vnorm v1)
+vunit v1 = v1 `vdivS` (vnorm v1)
 
 data Ray = Ray {origin :: Vector3, direction :: Vector3} deriving (Show)
 data Camera = Camera {eye :: Vector3, lt :: Vector3, rt :: Vector3, lb :: Vector3} deriving (Show)
@@ -69,8 +68,7 @@ emptyHit = Hit 0 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 0 0 0) (Sphere (Vector
 rayGetPoint :: Ray -> Float -> Vector3
 rayGetPoint (Ray org dir) dist = org `vadd` (dir `vmulS` dist)
 
-sphereGetNormal (Sphere cntr _ _ _) point = let v1 = point `vsub`cntr
-                                             in vnormalize v1
+sphereGetNormal (Sphere cntr _ _ _) point = vunit (point `vsub` cntr)
 
 sphereHit :: Sphere -> Ray -> Maybe Hit
 sphereHit sphere ray =
@@ -87,13 +85,13 @@ sphereHit sphere ray =
                          then
                          let pnt = rayGetPoint ray t1
                              nrml = sphereGetNormal sphere pnt
-                          in Hit t1 pnt nrml (color sphere) sphere
+                          in Just (Hit t1 pnt nrml (color sphere) sphere)
                           else let t2 = ((-b) + e) / a
                                 in if t2 > 0.007
                                       then
                                       let pnt2 = rayGetPoint ray t2
                                           nrml2 = sphereGetNormal sphere pnt2
-                                       in Hit t2 pnt2 nrml2 (color sphere) sphere
+                                       in Just (Hit t2 pnt2 nrml2 (color sphere) sphere)
                                        else Nothing
 
 pixels :: Float -> Float -> [[Pixel]]
@@ -105,7 +103,7 @@ primRays :: Camera -> [[Pixel]] -> [[Ray]]
 primRays (Camera eye lt rt lb) pixels' =
   let vdu = (rt `vsub` lt) `vdivS` width
       vdv = (lb `vsub` lt) `vdivS` height
-      toRay (Pixel x y) = Ray eye (vnormalize 
+      toRay (Pixel x y) = Ray eye (vunit 
             (vsub (lt `vadd` ((vdu `vmulS` x) `vadd` (vdv `vmulS` y))) eye))
    in
     map (\line -> map toRay line) pixels'
@@ -124,50 +122,61 @@ writePPM pixels = do
 
 
 rndsD :: [Float]
-rndsD = randomRs (-1.0, 1.0) (mkStdGen 42)
+rndsD = randomRs (-1.0, 1.0) (mkStdGen 190)
 
 rndsH :: [Float]
 rndsH = randomRs (-0.5, 0.5) (mkStdGen 25)
 
 rndDome :: [Float] -> Vector3 -> Vector3
 rndDome rnds nrml = 
-  let p = vnormalize (Vector3 (head (drop 0 rnds)) (head (drop 1 rnds)) (head (drop 2 rnds)))
+  let p = vunit (Vector3 (head (drop 0 rnds)) (head (drop 1 rnds)) (head (drop 2 rnds)))
       d = p `vdot` nrml
    in if d < 0 then rndDome (drop 3 rnds) nrml
                else p
 
-
-
-closestHit :: [Hit] -> Maybe Hit
+closestHit :: [Maybe Hit] -> Maybe Hit
 closestHit (x:[]) = x
 closestHit (Nothing:xs) = closestHit xs
 closestHit (x:Nothing:xs) = closestHit (x:xs)
 closestHit (a@(Just x1):b@(Just x2):xs)
   | (distance x1) < (distance x2) = closestHit (a:xs)
-  | otherwise = closestHit (x2:xs)
+  | otherwise = closestHit (b:xs)
 
-traceRay :: Int -> [Sphere] -> Ray -> Hit
-traceRay depth spheres ray = mapHit $ closestHit (map (\s -> sphereHit s ray) spheres)
+traceRay :: [Float] -> Int -> [Sphere] -> Ray -> Maybe Hit
+traceRay rnds depth spheres ray = mapHit $ closestHit (map (\s -> sphereHit s ray) spheres)
   where
-    mapHit Nothing = emptyHit
+    mapHit Nothing = Nothing
     mapHit (Just hit) = 
          if depth >= max_depth
-                then emptyHit 
-                else if (isLight $ sphere hit) == true
-                      then hit
-                      else
+                then Nothing 
+                else if (isLight $ sphere hit) == True
+                      then Just hit
+                      else let nray = Ray (point hit) (rndDome (drop (depth * 10) rnds) (normal hit))
+                               at = (direction nray) `vdot` (normal hit)
+                               nc = getMHitColor $ traceRay (drop (depth * 22) rnds) (depth + 1) spheres nray
+                               ncolor = (hitcolor hit) `vmul` (nc `vmulS` at)
+                            in Just (Hit (distance hit) (point hit) (normal hit) (ncolor) (sphere hit))
 
 
-traceLine :: [Sphere] -> [Ray] -> [Maybe Hit]
-traceLine spheres rays = map (traceRay 0 spheres) rays
+traceLine :: [Float] -> [Sphere] -> [Ray] -> [Maybe Hit]
+traceLine rnds spheres rays = map (traceRay rnds 0 spheres) rays
+
+getMHitColor :: Maybe Hit -> Vector3
+getMHitColor Nothing = Vector3 0 0 0
+getMHitColor (Just (Hit _ _ _ clr _)) = clr
+
+traceAll :: [Float] -> [Sphere] -> [[Ray]] -> [[Maybe Hit]]
+traceAll _ _ [] = []
+traceAll rnds spheres (line:lines) = [(traceLine rnds spheres line)] ++ traceAll (drop 1 rnds) spheres lines
 
 render :: World -> [[Vector3]]
 render (World camera spheres) = 
   let pixels' = pixels width height 
       rays = primRays camera pixels'
-      hits = map (traceLine spheres) rays
+      hits = map (traceLine rndsD spheres) rays
    in
-    map (\line -> map (\(Hit _ _ _ clr _) -> clr) line) hits
-   
+    map (\line -> map (\hit -> getMHitColor hit) line) hits
+        
+           
 main = do
   writePPM $ render world
