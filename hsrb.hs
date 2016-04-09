@@ -99,12 +99,14 @@ pixels width height =
   map (\y -> map (\x -> (Pixel x y)) [0..(width-1)]) [0..(height-1)]
 
 
-primRays :: Camera -> [[Pixel]] -> [[Ray]]
+primRays :: Camera -> [[Pixel]] -> [[[Ray]]]
 primRays (Camera eye lt rt lb) pixels' =
   let vdu = (rt `vsub` lt) `vdivS` width
       vdv = (lb `vsub` lt) `vdivS` height
-      toRay (Pixel x y) = Ray eye (vunit 
-            (vsub (lt `vadd` ((vdu `vmulS` x) `vadd` (vdv `vmulS` y))) eye))
+      toRay (Pixel x y) =
+        let rnd = rndsP (floor (y*width + x))
+         in map (\n -> Ray eye (vunit 
+                (vsub (lt `vadd` ((vdu `vmulS` (x + (head (drop n rnd))) ) `vadd` (vdv `vmulS` (y + (head (drop (n+1) rnd))) ))) eye))) [1..samples]
    in
     map (\line -> map toRay line) pixels'
 
@@ -120,6 +122,9 @@ writePPM pixels = do
   hPutStr file (concat (map (\line -> (concat (map toRGBStr line)) ++ "\n") pixels))
   hClose file
 
+
+rndsP :: Int -> [Float]
+rndsP seed = randomRs (0.0, 0.9999) (mkStdGen seed)
 
 rndsD :: Int -> [Float]
 rndsD seed = randomRs (-1.0, 1.0) (mkStdGen seed)
@@ -158,12 +163,19 @@ traceRay depth spheres ray = mapHit $ closestHit (map (\s -> sphereHit s ray) sp
                             in Just (Hit (distance hit) (point hit) (normal hit) (ncolor) (sphere hit))
 
 
-traceLine :: [Sphere] -> [Ray] -> [Maybe Hit]
-traceLine spheres rays = map (traceRay 0 spheres) rays
+traceLine :: [Sphere] -> [[Ray]] -> [[Maybe Hit]]
+traceLine spheres rayPkg = 
+  map (\rays -> map (traceRay 0 spheres) rays) rayPkg
+
 
 getMHitColor :: Maybe Hit -> Vector3
 getMHitColor Nothing = Vector3 0 0 0
 getMHitColor (Just (Hit _ _ _ clr _)) = clr
+
+avgHitsColor :: [Maybe Hit] -> Vector3
+avgHitsColor hits = (foldr addColor (Vector3 0 0 0) hits) `vdivS` (fromIntegral samples :: Float)
+  where
+    addColor (Just (Hit _ _ _ clr _)) acc = clr `vadd` acc 
 
 render :: World -> [[Vector3]]
 render (World camera spheres) = 
@@ -171,7 +183,7 @@ render (World camera spheres) =
       rays = primRays camera pixels'
       hits = map (traceLine spheres) rays
    in
-    map (\line -> map (\hit -> getMHitColor hit) line) hits
+    map (\line -> map (\hits -> avgHitsColor hits) line) hits
         
            
 main = do
