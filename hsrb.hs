@@ -45,7 +45,7 @@ world = World {
 
 
 --data Car = Car {company :: String, model :: String, year :: Int} deriving (Show) 
-data Vector3 = Vector3 Float Float Float deriving (Show)
+data Vector3 = Vector3 {vx::Float, vy::Float, vz::Float} deriving (Show)
 vadd (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = Vector3 (x1+x2) (y1+y2) (z1+z2)
 vsub (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = Vector3 (x1-x2) (y1-y2) (z1-z2)
 vmul (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = Vector3 (x1*x2) (y1*y2) (z1*z2)
@@ -121,14 +121,14 @@ writePPM pixels = do
   hClose file
 
 
-rndsD :: [Float]
-rndsD = randomRs (-1.0, 1.0) (mkStdGen 190)
+rndsD :: Int -> [Float]
+rndsD seed = randomRs (-1.0, 1.0) (mkStdGen seed)
 
 rndsH :: [Float]
 rndsH = randomRs (-0.5, 0.5) (mkStdGen 25)
 
 rndDome :: [Float] -> Vector3 -> Vector3
-rndDome rnds nrml = 
+rndDome rnds nrml =
   let p = vunit (Vector3 (head (drop 0 rnds)) (head (drop 1 rnds)) (head (drop 2 rnds)))
       d = p `vdot` nrml
    in if d < 0 then rndDome (drop 3 rnds) nrml
@@ -142,8 +142,8 @@ closestHit (a@(Just x1):b@(Just x2):xs)
   | (distance x1) < (distance x2) = closestHit (a:xs)
   | otherwise = closestHit (b:xs)
 
-traceRay :: [Float] -> Int -> [Sphere] -> Ray -> Maybe Hit
-traceRay rnds depth spheres ray = mapHit $ closestHit (map (\s -> sphereHit s ray) spheres)
+traceRay :: Int -> [Sphere] -> Ray -> Maybe Hit
+traceRay depth spheres ray = mapHit $ closestHit (map (\s -> sphereHit s ray) spheres)
   where
     mapHit Nothing = Nothing
     mapHit (Just hit) = 
@@ -151,29 +151,25 @@ traceRay rnds depth spheres ray = mapHit $ closestHit (map (\s -> sphereHit s ra
                 then Nothing 
                 else if (isLight $ sphere hit) == True
                       then Just hit
-                      else let nray = Ray (point hit) (rndDome (drop (depth * 10) rnds) (normal hit))
+                      else let nray = Ray (point hit) (rndDome (rndsD (floor $ (vnorm $ point hit) * 1928374)) (normal hit))
                                at = (direction nray) `vdot` (normal hit)
-                               nc = getMHitColor $ traceRay (drop (depth * 22) rnds) (depth + 1) spheres nray
+                               nc = getMHitColor $ traceRay (depth + 1) spheres nray
                                ncolor = (hitcolor hit) `vmul` (nc `vmulS` at)
                             in Just (Hit (distance hit) (point hit) (normal hit) (ncolor) (sphere hit))
 
 
-traceLine :: [Float] -> [Sphere] -> [Ray] -> [Maybe Hit]
-traceLine rnds spheres rays = map (traceRay rnds 0 spheres) rays
+traceLine :: [Sphere] -> [Ray] -> [Maybe Hit]
+traceLine spheres rays = map (traceRay 0 spheres) rays
 
 getMHitColor :: Maybe Hit -> Vector3
 getMHitColor Nothing = Vector3 0 0 0
 getMHitColor (Just (Hit _ _ _ clr _)) = clr
 
-traceAll :: [Float] -> [Sphere] -> [[Ray]] -> [[Maybe Hit]]
-traceAll _ _ [] = []
-traceAll rnds spheres (line:lines) = [(traceLine rnds spheres line)] ++ traceAll (drop 1 rnds) spheres lines
-
 render :: World -> [[Vector3]]
 render (World camera spheres) = 
   let pixels' = pixels width height 
       rays = primRays camera pixels'
-      hits = map (traceLine rndsD spheres) rays
+      hits = map (traceLine spheres) rays
    in
     map (\line -> map (\hit -> getMHitColor hit) line) hits
         
