@@ -225,6 +225,11 @@ bool hit_sphere(const struct sphere* sp, const struct ray* ray, struct hit* hit)
   return false;
 }
 
+float randf()
+{
+    return (float)rand() / (float)RAND_MAX ;
+}
+
 //Creates a random unit vector on the top half dome
 //of a unit sphere around the 'normal' vector passed
 //as parameter
@@ -234,9 +239,9 @@ struct v3 rnd_dome(const struct v3* normal)
   float d;
   do
   {
-    p.x = 2.0f * drand48() - 1.0f;
-    p.y = 2.0f * drand48() - 1.0f;
-    p.z = 2.0f * drand48() - 1.0f;
+    p.x = 2.0f * randf() - 1.0f;
+    p.y = 2.0f * randf() - 1.0f;
+    p.z = 2.0f * randf() - 1.0f;
 
     v3_mkunit(&p, &p);
     
@@ -352,8 +357,8 @@ int main (int argc, char** argv)
       {
         r.direction = world.camera.lt;
         
-        v3_muls(&u, &vdu, (float)x + drand48());
-        v3_muls(&v, &vdv, (float)y + drand48());
+        v3_muls(&u, &vdu, (float)x + randf());
+        v3_muls(&v, &vdv, (float)y + randf());
 
         v3_add(&r.direction, &r.direction, &u);
         v3_add(&r.direction, &r.direction, &v);
