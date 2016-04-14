@@ -67,9 +67,9 @@ $ gcc crb.c -o crb -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
 ```
 $ time ./crb
 
-real	2m1.940s
-user	2m1.212s
-sys	0m0.180s
+real    1m59.116s
+user    1m58.216s
+sys     0m0.112s
 ```
 Lua (luarb.lua)
 
