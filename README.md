@@ -61,11 +61,11 @@ power management:
 C (crb.c)
 
 ```
-gcc crb.c -o crb -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
+$ gcc crb.c -o crb -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
 ```
 
 ```
-$time ./crb
+$ time ./crb
 
 real	2m1.940s
 user	2m1.212s
@@ -83,7 +83,7 @@ sys     0m14.044s
 JavaScript (jsrb.js)
 
 ```
-$time node jsrb.js 
+$ time node jsrb.js 
 
 real    8m49.170s
 user    8m40.620s
@@ -91,11 +91,26 @@ sys     0m4.488s
 ```
 
 C# (csrb.js)
+```
+$ mcs csrb.cs
+```
 
 ```
-$time mono csrb.exe 
+$ time mono csrb.exe 
 
 real    12m18.463s
 user    12m0.392s
 sys     0m11.488s
+```
+
+Haskell (hsrb.hs)
+```
+$ ghc -O3 -o hsrb hsrb.hs
+```
+```
+$ time ./hsrb
+
+real    26m34.955s
+user    26m5.968s
+sys     0m21.108s
 ```
