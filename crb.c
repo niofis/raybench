@@ -87,11 +87,6 @@ void v3_mkunit(struct v3* dest, const struct v3* v)
   dest->z = v->z / n;
 }
 
-void v3_dump(const struct v3* v)
-{
-  printf("(%f, %f, %f)\n", v->x, v->y, v->z);
-} 
-
 struct ray
 {
   struct v3 origin;
@@ -113,29 +108,6 @@ struct camera
   struct v3 lb;
 };
 
-const struct camera cam = {
-  .eye = {
-    .x = 0.0f,
-    .y = 4.5f,
-    .z = 75.0f
-  },
-  .lt = {
-    .x = -8.0f,
-    .y =  9.0f,
-    .z =  50.0f
-  },
-  .rt = {
-    .x = 8.0f,
-    .y = 9.0f,
-    .z = 50.0f
-  },
-  .lb = {
-    .x = -8.0f,
-    .y =  0.0f,
-    .z =  50.0f
-  }
-};
-
 struct sphere
 {
   struct v3 center;
@@ -144,13 +116,66 @@ struct sphere
   bool is_light;
 };
 
-#define spheres_count 8
-struct sphere spheres[spheres_count];
-
 struct sphere sphere_new(struct v3 center, float radius, struct v3 color)
 {
   struct sphere s = {.center = center, .radius = radius, .color = color};
   return s;
+}
+
+struct world
+{
+  int spheres_count;
+  struct sphere* spheres;
+  struct camera camera;
+};
+
+struct world world_new()
+{
+  struct world world;
+  
+  world.spheres_count = 8;
+  world.spheres = (struct sphere*) malloc(sizeof(struct sphere) * world.spheres_count);
+
+  //floor
+  world.spheres[0] = sphere_new(v3_new(0.0f, -10002.0f, 0.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
+  //Left
+  world.spheres[1] = sphere_new(v3_new(-10012.0f, 0.0f, 0.0f), 9999.f, v3_new(1.0f,0.0f,0.0f));
+  //Right
+  world.spheres[2] = sphere_new(v3_new(10012.0f, 0.0f, 0.0f), 9999.f, v3_new(0.0f,1.0f,0.0f));
+  //Back
+  world.spheres[3] = sphere_new(v3_new(0.0f, 0.0f, -10020.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
+  //Ceiling
+  world.spheres[4] = sphere_new(v3_new(0.0f, 10012.0f, 0.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
+  //Light
+  world.spheres[4].is_light = true;
+
+  //Others
+  world.spheres[5] = sphere_new(v3_new(-5.0f, 0.0f, 2.0f), 2.0f, v3_new(1.0f,1.0f,0.0f));
+  world.spheres[6] = sphere_new(v3_new(0.0f, 5.0f, -1.0f), 4.0f,v3_new(1.0f,0.0f,0.0f));
+  world.spheres[7] = sphere_new(v3_new(8.0f, 5.0f, -1.0f), 2.0f,v3_new(0.0f,0.0f,1.0f));
+
+  world.camera.eye.x = 0.0f;
+  world.camera.eye.y = 4.5f;
+  world.camera.eye.z = 75.0f;
+
+  world.camera.lt.x = -8.0f;
+  world.camera.lt.y =  9.0f;
+  world.camera.lt.z =  50.0f;
+  
+  world.camera.rt.x = 8.0f;
+  world.camera.rt.y = 9.0f;
+  world.camera.rt.z = 50.0f;
+
+  world.camera.lb.x = -8.0f;
+  world.camera.lb.y =  0.0f;
+  world.camera.lb.z =  50.0f;
+
+  return world;
+}
+
+void world_del(struct world* world)
+{
+  free(world->spheres);
 }
 
 struct hit
@@ -221,21 +246,21 @@ struct v3 rnd_dome(const struct v3* normal)
   return p;
 }
 
-struct v3 trace(struct ray* ray, uint_fast16_t depth)
+struct v3 trace(struct world* world, struct ray* ray, uint_fast16_t depth)
 {
   struct v3 color = {0};
   bool did_hit = false;
   struct hit hit = {.dist = 1e15};
-  struct sphere sp;
-  for(uint_fast16_t i = 0 ; i < spheres_count; ++i)
+  struct sphere* sp;
+  for(uint_fast16_t i = 0 ; i < world->spheres_count; ++i)
   {
     struct hit res;
-    if (hit_sphere(&spheres[i], ray, &res))
+    if (hit_sphere(&world->spheres[i], ray, &res))
     {
       if(res.dist > 0.0001f && res.dist < hit.dist) {
-        sp = spheres[i];
+        sp = &world->spheres[i];
         did_hit = true;
-        color = spheres[i].color;
+        color = sp->color;
         hit = res;
       }
     }
@@ -243,14 +268,14 @@ struct v3 trace(struct ray* ray, uint_fast16_t depth)
 
   if(did_hit == true && depth < MAX_DEPTH)
   {
-    if(sp.is_light == false)
+    if(sp->is_light == false)
     {
       //The object is not a light, keep going
       struct ray nray;
       nray.origin = hit.point;
       nray.direction = rnd_dome(&hit.normal);
       struct v3 ncolor = {0};
-      ncolor = trace(&nray, depth + 1);
+      ncolor = trace(world, &nray, depth + 1);
       float at = v3_dot(&nray.direction, &hit.normal);
       v3_muls(&ncolor, &ncolor, at);
       v3_mul(&color, &color, &ncolor);
@@ -258,7 +283,7 @@ struct v3 trace(struct ray* ray, uint_fast16_t depth)
     else
     {
       //The object is a light no need to keep bouncing
-      color = sp.color;
+      color = sp->color;
     }
   }
 
@@ -297,33 +322,18 @@ void writeppm(struct v3 *data)
 
 int main (int argc, char** argv)
 {
-  //floor
-  spheres[0] = sphere_new(v3_new(0.0f, -10002.0f, 0.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
-  //Left
-  spheres[1] = sphere_new(v3_new(-10012.0f, 0.0f, 0.0f), 9999.f, v3_new(1.0f,0.0f,0.0f));
-  //Right
-  spheres[2] = sphere_new(v3_new(10012.0f, 0.0f, 0.0f), 9999.f, v3_new(0.0f,1.0f,0.0f));
-  //Back
-  spheres[3] = sphere_new(v3_new(0.0f, 0.0f, -10020.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
-  //Ceiling
-  spheres[4] = sphere_new(v3_new(0.0f, 10012.0f, 0.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
-  //Light
-  spheres[4].is_light = true;
-
-  //Others
-  spheres[5] = sphere_new(v3_new(-5.0f, 0.0f, 2.0f), 2.0f, v3_new(1.0f,1.0f,0.0f));
-  spheres[6] = sphere_new(v3_new(0.0f, 5.0f, -1.0f), 4.0f,v3_new(1.0f,0.0f,0.0f));
-  spheres[7] = sphere_new(v3_new(8.0f, 5.0f, -1.0f), 2.0f,v3_new(0.0f,0.0f,1.0f));
-
+  
+  struct world world = world_new();
+  
   struct v3 *data;
   data = malloc(HEIGHT * WIDTH * sizeof(struct v3));
 
   struct v3 vdu = {0};
-  v3_sub(&vdu, &cam.rt, &cam.lt);
+  v3_sub(&vdu, &world.camera.rt, &world.camera.lt);
   v3_divs(&vdu, &vdu, (float) WIDTH);
 
   struct v3 vdv = {0};
-  v3_sub(&vdv, &cam.lb, &cam.lt);
+  v3_sub(&vdv, &world.camera.lb, &world.camera.lt);
   v3_divs(&vdv, &vdv, (float) HEIGHT);
 
   for(uint_fast16_t y = 0; y < HEIGHT; ++y)
@@ -332,7 +342,7 @@ int main (int argc, char** argv)
     {
 
       struct ray r;
-      r.origin = cam.eye;
+      r.origin = world.camera.eye;
       
       struct v3 u;
       struct v3 v;
@@ -340,7 +350,7 @@ int main (int argc, char** argv)
 
       for(uint_fast16_t s = 0; s < SAMPLES; ++s)
       {
-        r.direction = cam.lt;
+        r.direction = world.camera.lt;
         
         v3_muls(&u, &vdu, (float)x + drand48());
         v3_muls(&v, &vdv, (float)y + drand48());
@@ -351,7 +361,7 @@ int main (int argc, char** argv)
         v3_sub(&r.direction, &r.direction, &r.origin);
 
         v3_mkunit(&r.direction, &r.direction);
-        u = trace(&r, 0);
+        u = trace(&world, &r, 0);
         v3_add(&c, &c, &u);
       }
 
@@ -364,6 +374,8 @@ int main (int argc, char** argv)
   writeppm(data);
 
   free(data);
+
+  world_del(&world);
 
   return 0;
 }
