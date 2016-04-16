@@ -68,11 +68,7 @@ class Vector3 {
   }
 
   norm () {
-    return Math.sqrt(
-      this.x * this.x +
-      this.y * this.y +
-      this.z * this.z
-    );
+    return Math.sqrt(this.dot(this));
   }
 
   unit () {
