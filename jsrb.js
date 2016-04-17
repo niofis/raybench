@@ -4,7 +4,6 @@ const WIDTH = 1280;
 const HEIGHT = 720;
 const SAMPLES = 50;
 const MAX_DEPTH = 5;
-const spheres = [];
 
 class Vector3 {
   constructor (x, y, z) {
@@ -151,6 +150,68 @@ class Sphere {
   }
 }
 
+class World {
+  constructor() {
+    this.camera = new Camera();
+    this.spheres = [];
+    //Floor
+    this.spheres.push(new Sphere(
+      new Vector3(0, -10002, 0),
+      9999,
+      new Vector3(1, 1, 1),
+      false));
+
+    //Left
+    this.spheres.push(new Sphere(
+      new Vector3(-10012, 0, 0),
+      9999,
+      new Vector3(1, 0, 0),
+      false));
+
+    //Right
+    this.spheres.push(new Sphere(
+      new Vector3(10012, 0, 0),
+      9999,
+      new Vector3(0, 1, 0),
+      false));
+
+    //Back
+    this.spheres.push(new Sphere(
+      new Vector3(0, 0, -10012),
+      9999,
+      new Vector3(1, 1, 1),
+      false));
+
+    //Ceiling
+    this.spheres.push(new Sphere(
+      new Vector3(0, 10012, 0),
+      9999,
+      new Vector3(1, 1, 1),
+      true));
+
+    //Other
+    this.spheres.push(new Sphere(
+      new Vector3(-5, 0, 2),
+      2,
+      new Vector3(1, 1, 0),
+      false));
+
+    this.spheres.push(new Sphere(
+      new Vector3(0, 5, -1),
+      4,
+      new Vector3(1, 0, 0),
+      false));
+
+    this.spheres.push(new Sphere(
+      new Vector3(8, 5, -1),
+      2,
+      new Vector3(0, 0, 1),
+      false));
+
+  }
+}
+
+
 function rnd_dome (normal) {
   let p = new Vector3();
   let d;
@@ -167,13 +228,13 @@ function rnd_dome (normal) {
   return p;
 }
 
-function trace (ray, depth) {
+function trace (world, ray, depth) {
   let color = new Vector3();
   let did_hit = false;
   let hit = new Hit(1e15);
   let sp;
 
-  spheres.forEach((s) => {
+  world.spheres.forEach((s) => {
     let lh = s.hit(ray);
 
     if (lh && lh.dist > 0.0001 && lh.dist < hit.dist) {
@@ -190,7 +251,7 @@ function trace (ray, depth) {
           hit.point,
           rnd_dome(hit.normal));
 
-      let ncolor = trace(nray, depth + 1);
+      let ncolor = trace(world, nray, depth + 1);
       let at = nray.direction.dot(hit.normal);
 
       color = color.mul(ncolor.mul(at));
@@ -224,81 +285,27 @@ function writeppm (data) {
 
 (() => {
   
-  //Floor
-  spheres.push(new Sphere(
-    new Vector3(0, -10002, 0),
-    9999,
-    new Vector3(1, 1, 1),
-    false));
-
-  //Left
-  spheres.push(new Sphere(
-    new Vector3(-10012, 0, 0),
-    9999,
-    new Vector3(1, 0, 0),
-    false));
-
-  //Right
-  spheres.push(new Sphere(
-    new Vector3(10012, 0, 0),
-    9999,
-    new Vector3(0, 1, 0),
-    false));
-
-  //Back
-  spheres.push(new Sphere(
-    new Vector3(0, 0, -10012),
-    9999,
-    new Vector3(1, 1, 1),
-    false));
-
-  //Ceiling
-  spheres.push(new Sphere(
-    new Vector3(0, 10012, 0),
-    9999,
-    new Vector3(1, 1, 1),
-    true));
-
-  //Other
-  spheres.push(new Sphere(
-    new Vector3(-5, 0, 2),
-    2,
-    new Vector3(1, 1, 0),
-    false));
-
-  spheres.push(new Sphere(
-    new Vector3(0, 5, -1),
-    4,
-    new Vector3(1, 0, 0),
-    false));
-
-  spheres.push(new Sphere(
-    new Vector3(8, 5, -1),
-    2,
-    new Vector3(0, 0, 1),
-    false));
-
   let data = [];
-  let cam = new Camera();
-  let vdu = (cam.rt.sub(cam.lt)).div(WIDTH);
-  let vdv = (cam.lb.sub(cam.lt)).div(HEIGHT);
-
+  let world = new World();
+  let vdu = (world.camera.rt.sub(world.camera.lt)).div(WIDTH);
+  let vdv = (world.camera.lb.sub(world.camera.lt)).div(HEIGHT);
+  
   for(let y = 0; y < HEIGHT; ++y) {
     data[y] = [];
     for(let x = 0; x < WIDTH; ++x) {
       let color = new Vector3();
       let ray = new Ray();
 
-      ray.origin = cam.eye;
+      ray.origin = world.camera.eye;
 
       for(let i = 0; i < SAMPLES; ++i) {
-        ray.direction = cam.lt.add(
+        ray.direction = world.camera.lt.add(
           vdu.mul(x + Math.random()).add(
             vdv.mul(y + Math.random())));
 
         ray.direction = ray.direction.sub(ray.origin);
         ray.direction = ray.direction.unit();
-        color = color.add(trace(ray, 0));
+        color = color.add(trace(world, ray, 0));
       }
 
       color = color.div(SAMPLES);

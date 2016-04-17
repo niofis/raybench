@@ -58,8 +58,6 @@ class Vector3:
       return self.divs(self.norm())
 
 
-            
-
 class Ray:
   def __init__(self, origin = Vector3(), direction = Vector3):
     self.origin = origin
@@ -98,6 +96,7 @@ class Sphere:
           hit.normal = hit.point.sub(self.center).unit()
 
           return hit
+
         t = (-b + e) / a
         if t > 0.007:
           hit = Hit()
@@ -116,10 +115,10 @@ class Sphere:
 
 class Camera:
   def __init__(self, 
-          eye = Vector3(0, 4.5, 75), 
-          lt = Vector3(-8, 9, 50), 
-          rt = Vector3(8, 9, 50), 
-          lb = Vector3(-8, 0, 50)):
+          eye = Vector3(0.0, 4.5, 75.0), 
+          lt = Vector3(-8.0, 9.0, 50.0), 
+          rt = Vector3(8.0, 9.0, 50.0), 
+          lb = Vector3(-8.0, 0.0, 50.0)):
     self.eye = eye
     self.lt = lt
     self.rt = rt
@@ -138,57 +137,58 @@ class World:
   def __init__(self):
     self.camera = Camera()
     self.spheres = []
+    #Floor
     self.spheres.append(Sphere(
-        Vector3(0, -10002, 0),
-        9999,
-        Vector3(1, 1, 1),
+        Vector3(0, -10002.0, 0),
+        9999.0,
+        Vector3(1.0, 1.0, 1.0),
         False));
 
     #Left
     self.spheres.append(Sphere(
-        Vector3(-10012, 0, 0),
-        9999,
-        Vector3(1, 0, 0),
+        Vector3(-10012.0, 0, 0),
+        9999.0,
+        Vector3(1.0, 0, 0),
         False));
 
     #Right
     self.spheres.append(Sphere(
-        Vector3(10012, 0, 0),
-        9999,
-        Vector3(0, 1, 0),
+        Vector3(10012.0, 0, 0),
+        9999.0,
+        Vector3(0, 1.0, 0),
         False));
 
     #Back
     self.spheres.append(Sphere(
-        Vector3(0, 0, -10012),
-        9999,
-        Vector3(1, 1, 1),
+        Vector3(0, 0, -10012.0),
+        9999.0,
+        Vector3(1.0, 1.0, 1.0),
         False));
 
     #Ceiling
     self.spheres.append(Sphere(
-        Vector3(0, 10012, 0),
-        9999,
-        Vector3(1, 1, 1),
+        Vector3(0, 10012.0, 0),
+        9999.0,
+        Vector3(1.0, 1.0, 1.0),
         True));
 
     #Other
     self.spheres.append(Sphere(
-        Vector3(-5, 0, 2),
-        2,
-        Vector3(1, 1, 0),
+        Vector3(-5.0, 0, 2.0),
+        2.0,
+        Vector3(1.0, 1.0, 0),
         False));
 
     self.spheres.append(Sphere(
-        Vector3(0, 5, -1),
-        4,
-        Vector3(1, 0, 0),
+        Vector3(0, 5.0, -1.0),
+        4.0,
+        Vector3(1.0, 0, 0),
         False));
-
+    
     self.spheres.append(Sphere(
-        Vector3(8, 5, -1),
-        2,
-        Vector3(0, 0, 1),
+        Vector3(8.0, 5.0, -1.0),
+        2.0,
+        Vector3(0, 0, 1.0),
         False));
 
 
@@ -213,15 +213,16 @@ def trace(world, ray, depth):
   hit = Hit(1e15)
   sp = None
 
+
   for sphere in world.spheres:
     lh = sphere.hit(ray)
-    if lh and lh.dist > 0.001 and lh.dist < hit.dist:
+    if lh != None and lh.dist > 0.0001 and lh.dist < hit.dist:
       sp = sphere
       did_hit = True
       color = sphere.color
       hit = lh
 
-  if did_hit and depth < MAX_DEPTH:
+  if did_hit == True and depth < MAX_DEPTH:
     if sp.is_light == False:
       nray = Ray(hit.point, rnd_dome(hit.normal))
       ncolor = trace(world, nray, depth + 1)
@@ -236,8 +237,8 @@ def trace(world, ray, depth):
 def writeppm(data):
   ppm = open("pyrb.ppm", "w")
   ppm.write("P3\n{0} {1}\n255\n".format(WIDTH,HEIGHT))
-  for y in range(0,HEIGHT-1):
-    for x in range(0,WIDTH-1):
+  for y in range(0,HEIGHT):
+    for x in range(0,WIDTH):
       ppm.write("{0} {1} {2} ".format(
         math.floor(data[y][x].x * 255.99),
         math.floor(data[y][x].y * 255.99),
@@ -251,13 +252,14 @@ def main():
   world = World()
   vdu = world.camera.rt.sub(world.camera.lt).divs(WIDTH)
   vdv = world.camera.lb.sub(world.camera.lt).divs(HEIGHT)
-  for y in range(0, HEIGHT-1):
+  
+  for y in range(0, HEIGHT):
     line = []
-    for x in range(0, WIDTH-1):
+    for x in range(0, WIDTH):
       color = Vector3()
       ray = Ray(world.camera.eye)
 
-      for i in range(1,SAMPLES):
+      for i in range(0,SAMPLES):
         
         ray.direction = world.camera.lt.add(vdu.muls(x + random.random()).add(
                         vdv.muls(y + random.random())))
