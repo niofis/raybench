@@ -123,3 +123,10 @@ real    348m35.965s
 user    345m51.776s
 sys     0m22.880s
 ```
+```
+$ time pypy pyrb.py
+
+real    14m2.406s
+user    13m55.292s
+sys     0m1.416s
+```
