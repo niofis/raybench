@@ -5,7 +5,6 @@ local WIDTH = 1280
 local HEIGHT = 720
 local SAMPLES = 50
 local MAX_DEPTH = 5
-local spheres = {}
 
 local Vector3 = {}
 Vector3.__index = Vector3
@@ -153,8 +152,6 @@ function Camera.new (ops)
   return c
 end
 
-
-
 local Sphere = {}
 Sphere.__index = Sphere
 
@@ -211,6 +208,71 @@ function Sphere:hit (ray)
   return nil
 end
 
+local World = {}
+World.__index = World
+
+function World.new (ops)
+  local s = {}
+
+  setmetatable(s, World)
+
+  ops = ops or {}
+
+  s.camera = Camera.new()
+  s.spheres = {}
+
+  --Floor
+  s.spheres[0] = Sphere.new{
+    center = Vector3.new(0, -10002, 0),
+    radius = 9999,
+    color = Vector3.new(1,1,1)
+  }
+  --Left
+  s.spheres[1] = Sphere.new{
+    center = Vector3.new(-10012, 0, 0),
+    radius = 9999, 
+    color = Vector3.new(1,0,0)
+  }
+  --Right
+  s.spheres[2] = Sphere.new{
+    center = Vector3.new(10012, 0, 0),
+    radius = 9999,
+    color = Vector3.new(0,1,0)
+  }
+  --Back
+  s.spheres[3] = Sphere.new{
+    center = Vector3.new(0, 0, -10020), 
+    radius = 9999,
+    color = Vector3.new(1,1,1)
+  }
+  --Ceiling
+  s.spheres[4] = Sphere.new{
+    center = Vector3.new(0, 10012, 0),
+    radius = 9999,
+    color = Vector3.new(1,1,1),
+    is_light = true
+  }
+  --Others
+  s.spheres[5] = Sphere.new{
+    center = Vector3.new(-5, 0, 2),
+    radius = 2,
+    color = Vector3.new(1,1,0)
+  }
+  s.spheres[6] = Sphere.new{
+    center = Vector3.new(0, 5, -1),
+    radius = 4,
+    color = Vector3.new(1,0,0)
+  }
+  s.spheres[7] = Sphere.new{
+    center = Vector3.new(8, 5, -1),
+    radius = 2,
+    color = Vector3.new(0,0,1)
+  }
+
+  return s
+end
+
+
 local function rnd_dome (nrml)
   local p = Vector3.new()
   local d
@@ -228,13 +290,13 @@ local function rnd_dome (nrml)
   return p
 end
 
-local function trace (ray, depth)
+local function trace (world, ray, depth)
   local color = Vector3.new()
   local did_hit = false
   local hit = Hit.new({dist = 1E+15})
   local sp
 
-  for _,s in pairs(spheres) do
+  for _,s in pairs(world.spheres) do
     local lh = s:hit(ray)
 
     if lh ~= nil and lh.dist > 0.0001 and lh.dist < hit.dist then
@@ -252,7 +314,7 @@ local function trace (ray, depth)
       nray.origin = hit.point
       nray.direction = rnd_dome(hit.normal)
 
-      local ncolor = trace(nray, depth + 1)
+      local ncolor = trace(world, nray, depth + 1)
 
       local at = nray.direction:dot(hit.normal)
 
@@ -287,61 +349,14 @@ end
 
 local function main ()
 
-  --Floor
-  spheres[0] = Sphere.new{
-    center = Vector3.new(0, -10002, 0),
-    radius = 9999,
-    color = Vector3.new(1,1,1)
-  }
-  --Left
-  spheres[1] = Sphere.new{
-    center = Vector3.new(-10012, 0, 0),
-    radius = 9999, 
-    color = Vector3.new(1,0,0)
-  }
-  --Right
-  spheres[2] = Sphere.new{
-    center = Vector3.new(10012, 0, 0),
-    radius = 9999,
-    color = Vector3.new(0,1,0)
-  }
-  --Back
-  spheres[3] = Sphere.new{
-    center = Vector3.new(0, 0, -10020), 
-    radius = 9999,
-    color = Vector3.new(1,1,1)
-  }
-  --Ceiling
-  spheres[4] = Sphere.new{
-    center = Vector3.new(0, 10012, 0),
-    radius = 9999,
-    color = Vector3.new(1,1,1),
-    is_light = true
-  }
-  --Others
-  spheres[5] = Sphere.new{
-    center = Vector3.new(-5, 0, 2),
-    radius = 2,
-    color = Vector3.new(1,1,0)
-  }
-  spheres[6] = Sphere.new{
-    center = Vector3.new(0, 5, -1),
-    radius = 4,
-    color = Vector3.new(1,0,0)
-  }
-  spheres[7] = Sphere.new{
-    center = Vector3.new(8, 5, -1),
-    radius = 2,
-    color = Vector3.new(0,0,1)
-  }
 
 
   local data = {}
 
-  local cam = Camera.new()
+  local world = World.new()
 
-  local vdu = (cam.rt - cam.lt) / WIDTH
-  local vdv = (cam.lb - cam.lt) / HEIGHT
+  local vdu = (world.camera.rt - world.camera.lt) / WIDTH
+  local vdv = (world.camera.lb - world.camera.lt) / HEIGHT
 
   for y = 0, HEIGHT - 1 do
     data[y] = {}
@@ -349,11 +364,11 @@ local function main ()
       local color = Vector3.new()
       local ray = Ray.new()
 
-      ray.origin = cam.eye
+      ray.origin = world.camera.eye
 
       for i = 0, SAMPLES-1 do
 
-        ray.direction = cam.lt +
+        ray.direction = world.camera.lt +
           (vdu * (x + math.random())) +
           (vdv * (y + math.random()))
 
@@ -362,7 +377,7 @@ local function main ()
 
         ray.direction = ray.direction:unit()
 
-        color = color + trace(ray, 0)
+        color = color + trace(world, ray, 0)
       end
 
       color = color / SAMPLES
