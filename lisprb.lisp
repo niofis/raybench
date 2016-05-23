@@ -94,7 +94,7 @@
   (let ((data nil)
         (world (world-new))
         (camera (world-camera world))
-        (vdu (v-divs
-  )
+        (vdu (v-div-s (v-sub (camera-rt camera) (camera-lt camera)) *width*))
+        (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera)) *height*))
 
 ;;(main)
