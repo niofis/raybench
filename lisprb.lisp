@@ -91,10 +91,13 @@
     ))
 
 (defun main ()
-  (let ((data nil)
-        (world (world-new))
+  (let* ((world (world-new))
         (camera (world-camera world))
         (vdu (v-div-s (v-sub (camera-rt camera) (camera-lt camera)) *width*))
-        (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera)) *height*))
+        (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera)) *height*)))
+    (loop for y from 0 to *height* collect
+          (loop for x from 0 to *width* collect
+                '(0 0 1)))))
+
 
 ;;(main)
