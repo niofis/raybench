@@ -7,7 +7,7 @@
   (mapcar #'+ v1 v2))
 
 (defun v-sub (v1 v2)
-  (mapcar #'- (v1 v2)))
+  (mapcar #'- v1 v2))
 
 (defun v-mul (v1 v2)
   (mapcar #'* v1 v2))
