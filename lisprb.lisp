@@ -3,6 +3,15 @@
 (defparameter *samples* 50)
 (defparameter *max-depth* 5)
 
+(defmacro v-x (v)
+  `(nth 0 ,v))
+
+(defmacro v-y (v)
+  `(nth 1 ,v))
+
+(defmacro v-z (v)
+  `(nth 2 ,v))
+
 (defun v-add (v1 v2)
   (mapcar #'+ v1 v2))
 
@@ -34,31 +43,31 @@
 (defun ray-new (origin direction) 
   (list origin direction))
 
-(defun ray-origin (ray) 
-  (nth 0 ray))
+(defmacro ray-origin (ray) 
+  `(nth 0 ,ray))
 
-(defun ray-direction (ray) 
-  (nth 1 ray))
+(defmacro ray-direction (ray) 
+  `(nth 1 ,ray))
 
 ;;Hit stuff
 (defun hit-new (dist point normal) 
   (list dist point normal))
 
 ;;Camera
-(defun camera-new (eye lt rt lb)
-  (list eye lt rt lb))
+(defmacro camera-new (eye lt rt lb)
+  `(:camera ,eye ,lt ,rt ,lb))
 
 (defmacro camera-eye (camera)
-  `(nth 0 ,camera))
-
-(defmacro camera-lt (camera)
   `(nth 1 ,camera))
 
-(defmacro camera-rt (camera)
+(defmacro camera-lt (camera)
   `(nth 2 ,camera))
 
-(defmacro camera-lb (camera)
+(defmacro camera-rt (camera)
   `(nth 3 ,camera))
+
+(defmacro camera-lb (camera)
+  `(nth 4 ,camera))
 
 ;;Sphere
 (defun sphere-new (center radius color is_light)
@@ -104,7 +113,12 @@
         (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera)) *height*))
         (data (loop for y from 0 to (- *height* 1) collect
                 (loop for x from 0 to (- *width* 1) collect
-                  '(0 0 1)))))
+                  (let* ((color '(0 0 0))
+                         (ray (ray-new (camera-eye camera) '(0 0 0))))
+                    (loop for i from 1 to *samples* do
+                          
+                    )
+                  ))))
         (writeppm data)))
 
 
