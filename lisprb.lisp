@@ -37,7 +37,7 @@
   (sqrt (v-dot v1 v1)))
 
 (defun v-unit (v1)
-  (v-div v1 (v-norm v1)))
+  (v-div-s v1 (v-norm v1)))
 
 ;;Ray stuff
 (defun ray-new (origin direction) 
@@ -49,33 +49,76 @@
 (defmacro ray-direction (ray) 
   `(nth 1 ,ray))
 
+(defun ray-point (ray dist)
+  (v-add (ray-origin ray) (v-mul-s dist (ray-direction ray))))
+
 ;;Hit stuff
-(defun hit-new (dist point normal) 
-  (list dist point normal))
+(defun hit-new (&optional dist point normal sphere) 
+  (list dist point normal sphere))
+
+(defmacro hit-distance (hit)
+  `(nth 0 ,hit))
+
+(defmacro hit-point (hit)
+  `(nth 1 ,hit))
+
+(defmacro hit-normal (hit)
+  `(nth 2 ,hit))
+
+(defmacro hit-sphere (hit)
+  `(nth 3 ,hit))
+
 
 ;;Camera
 (defmacro camera-new (eye lt rt lb)
-  `(:camera ,eye ,lt ,rt ,lb))
+  `(list ,eye ,lt ,rt ,lb))
 
 (defmacro camera-eye (camera)
-  `(nth 1 ,camera))
+  `(nth 0 ,camera))
 
 (defmacro camera-lt (camera)
-  `(nth 2 ,camera))
+  `(nth 1 ,camera))
 
 (defmacro camera-rt (camera)
-  `(nth 3 ,camera))
+  `(nth 2 ,camera))
 
 (defmacro camera-lb (camera)
-  `(nth 4 ,camera))
+  `(nth 3 ,camera))
 
 ;;Sphere
 (defun sphere-new (center radius color is_light)
   (list center radius color is_light))
 
+(defun sphere-center (sphere)
+  (nth 0 sphere))
+
+(defun sphere-radius (sphere)
+  (nth 1 sphere))
+
+(defun sphere-color (sphere)
+  (nth 2 sphere))
+
+(defun sphere-is-light (sphere)
+  (nth 3 sphere))
+
 (defun sphere-hit (sphere ray)
-  "To implement"
-  nil)
+  (let* ((oc (v-sub (ray-origin ray) (sphere-center sphere)))
+         (dir (ray-direction ray))
+         (a (v-dot dir dir))
+         (b (v-dot oc dir))
+         (c (- (v-dot oc oc) (* (sphere-radius sphere) (sphere-radius sphere))))
+         (dis (- (* b b) (* a c)))
+         (e (sqrt dis))
+         (t1 (/ (- (- 0 b) e) a))
+         (t2 (/ (+ (- 0 b) e) a)))
+    (cond ((and (> dis 0) (> t1 0.007))
+           (let ((point (ray-point ray t1)))
+             (hit-new t1 point (v-unit (v-sub point (sphere-center sphere))) sphere)))
+          ((and (> dis 0) (> t2 0.007))
+           (let ((point (ray-point ray t2)))
+             (hit-new t2 point (v-unit (v-sub point (sphere-center sphere))) sphere)))
+          (t (hit-new 1e15 nil nil nil)))))
+         
 
 (defun world-new ()
   (list (camera-new '(0 4.5 75) '(-8 9 50) '(8 9 50) '(-8 0 50))
@@ -92,7 +135,34 @@
   (nth 0 world))
 
 (defun world-spheres (world)
-  (nth 2 world))
+  (nth 1 world))
+
+(defun rnd-dome (normal)
+  (let ((p '(0 0 0))
+        (d 0))
+    (loop
+      (setf p (list (- (* 2 (random 1.0) 1))
+                (- (* 2 (random 1.0) 1))
+                (- (* 2 (random 1.0) 1))))
+      (setf p (v-unit p))
+      (setf d (v-dot p normal))
+      (when (> d 0) (return p)))))
+
+(defun trace-ray (world ray depth)
+  (let ((hits (loop for sp in (world-spheres world) collect (sphere-hit sp ray)))
+        (hit (hit-new 1e16 nil nil nil))
+        (color '(0 0 0)))
+    (loop for lh in hits do
+          (cond ((< (hit-distance lh) (hit-distance hit))
+                  (setf hit lh))))
+    (cond ((null (hit-point hit)) '(0 0 0))
+          ((>= depth *max-depth*))
+          ((sphere-is-light (hit-sphere hit)) (sphere-color (hit-sphere hit)))
+          (t (let* ((nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit))))
+                  (ncolor (trace-ray world nray (+ depth 1)))
+                  (at (v-dot (ray-direction nray) (hit-normal hit))))
+             (setf color (v-mul color (v-mul-s ncolor at))))))))
+       
 
 (defun to-255 (color)
   (let ((c255 (mapcar #'* color '(255.9 255.9 255.9))))
@@ -109,6 +179,7 @@
 (defun main ()
   (let* ((world (world-new))
         (camera (world-camera world))
+        (lt (camera-lt camera))
         (vdu (v-div-s (v-sub (camera-rt camera) (camera-lt camera)) *width*))
         (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera)) *height*))
         (data (loop for y from 0 to (- *height* 1) collect
@@ -116,10 +187,15 @@
                   (let* ((color '(0 0 0))
                          (ray (ray-new (camera-eye camera) '(0 0 0))))
                     (loop for i from 1 to *samples* do
-                          
-                    )
-                  ))))
-        (writeppm data)))
+                      (let ((dir '(0 0 0)))
+                        (setf dir (v-add lt (v-add
+                                            (v-mul-s vdu (+ x (random 1.0)))
+                                            (v-mul-s vdv (+ y (random 1.0))))))
+                        (setf dir (v-sub dir (ray-origin ray)))
+                        (setf dir (v-unit dir))
+                        (setf color (v-add color (trace-ray world ray 0))))
+                      (v-div-s color *samples*)))))))
+    (writeppm data)))
 
 
 ;;(main)
