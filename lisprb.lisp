@@ -48,17 +48,17 @@
 (defun camera-new (eye lt rt lb)
   (list eye lt rt lb))
 
-(defun camera-eye (camera)
-  (nth 0 camera))
+(defmacro camera-eye (camera)
+  `(nth 0 ,camera))
 
-(defun camera-lt (camera)
-  (nth 1 camera))
+(defmacro camera-lt (camera)
+  `(nth 1 ,camera))
 
-(defun camera-rt (camera)
-  (nth 2 camera))
+(defmacro camera-rt (camera)
+  `(nth 2 ,camera))
 
-(defun camera-lb (camera)
-  (nth 3 camera))
+(defmacro camera-lb (camera)
+  `(nth 3 ,camera))
 
 ;;Sphere
 (defun sphere-new (center radius color is_light)
@@ -85,19 +85,27 @@
 (defun world-spheres (world)
   (nth 2 world))
 
+(defun to-255 (color)
+  (let ((c255 (mapcar #'* color '(255.9 255.9 255.9))))
+    (mapcar #'floor c255)))
+                
 (defun writeppm (data) 
   (with-open-file (ppm "lisprb.ppm" :direction :output :if-exists :supersede)
     (format ppm "P3~%~A ~A~%255~%" *width* *height*)
-    ))
+    (loop for row in data do
+          (loop for color in row do
+                (format ppm "~{~A ~} " (to-255 color)))
+          (format ppm "~%"))))
 
 (defun main ()
   (let* ((world (world-new))
         (camera (world-camera world))
         (vdu (v-div-s (v-sub (camera-rt camera) (camera-lt camera)) *width*))
-        (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera)) *height*)))
-    (loop for y from 0 to *height* collect
-          (loop for x from 0 to *width* collect
-                '(0 0 1)))))
+        (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera)) *height*))
+        (data (loop for y from 0 to (- *height* 1) collect
+                (loop for x from 0 to (- *width* 1) collect
+                  '(0 0 1)))))
+        (writeppm data)))
 
 
 ;;(main)
