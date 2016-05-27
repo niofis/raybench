@@ -1,3 +1,5 @@
+(declaim (optimize (speed 3) (safety 0) (space 0)))
+
 (defparameter *width* 1280)
 (defparameter *height* 720)
 (defparameter *samples* 50)
@@ -28,7 +30,7 @@
   (v-new (/ (v-x v1) s) (/ (v-y v1) s) (/ (v-z v1) s)))
 
 (defun v-dot (v1 v2)
-  (reduce #'+ (v-mul v1 v2)))
+  (+ (* (v-x v1) (v-x v2)) (* (v-y v1) (v-y v2)) (* (v-z v1) (v-z v2))))
   
 (defun v-norm (v1)
   (sqrt (v-dot v1 v1)))
@@ -158,3 +160,9 @@
                         (setf color (v-add color (trace-ray world ray 0)))))
                     (v-div-s color *samples*))))))
     (writeppm data)))
+
+;(require :sb-sprof)
+;(sb-sprof:start-profiling)
+;(main nil)
+;(sb-sprof:stop-profiling)
+;(sb-sprof:report)
