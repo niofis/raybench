@@ -1,6 +1,6 @@
-(defparameter *width* 1280)
-(defparameter *height* 720)
-(defparameter *samples* 50)
+(defparameter *width* 128)
+(defparameter *height* 72)
+(defparameter *samples* 1)
 (defparameter *max-depth* 5)
 
 (defmacro v-x (v)
@@ -50,7 +50,7 @@
   `(nth 1 ,ray))
 
 (defun ray-point (ray dist)
-  (v-add (ray-origin ray) (v-mul-s dist (ray-direction ray))))
+  (v-add (ray-origin ray) (v-mul-s (ray-direction ray) dist)))
 
 ;;Hit stuff
 (defun hit-new (&optional dist point normal sphere) 
@@ -193,6 +193,7 @@
                                             (v-mul-s vdv (+ y (random 1.0))))))
                         (setf dir (v-sub dir (ray-origin ray)))
                         (setf dir (v-unit dir))
+                        (setf (ray-direction ray) dir)
                         (setf color (v-add color (trace-ray world ray 0))))
                       (v-div-s color *samples*)))))))
     (writeppm data)))
