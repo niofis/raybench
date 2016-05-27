@@ -1,6 +1,6 @@
-(defparameter *width* 128)
-(defparameter *height* 72)
-(defparameter *samples* 1)
+(defparameter *width* 1280)
+(defparameter *height* 720)
+(defparameter *samples* 50)
 (defparameter *max-depth* 5)
 
 (defmacro v-x (v)
@@ -141,9 +141,9 @@
   (let ((p '(0 0 0))
         (d 0))
     (loop
-      (setf p (list (- (* 2 (random 1.0) 1))
-                (- (* 2 (random 1.0) 1))
-                (- (* 2 (random 1.0) 1))))
+      (setf p (list (- (* 2 (random 1.0)) 1)
+                (- (* 2 (random 1.0)) 1)
+                (- (* 2 (random 1.0)) 1)))
       (setf p (v-unit p))
       (setf d (v-dot p normal))
       (when (> d 0) (return p)))))
@@ -155,17 +155,18 @@
     (loop for lh in hits do
           (cond ((< (hit-distance lh) (hit-distance hit))
                   (setf hit lh))))
+    (setf color (sphere-color (hit-sphere hit)))
     (cond ((null (hit-point hit)) '(0 0 0))
-          ((>= depth *max-depth*))
-          ((sphere-is-light (hit-sphere hit)) (sphere-color (hit-sphere hit)))
+          ((>= depth *max-depth*) '(0 0 0))
+          ((sphere-is-light (hit-sphere hit)) color)
           (t (let* ((nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit))))
                   (ncolor (trace-ray world nray (+ depth 1)))
                   (at (v-dot (ray-direction nray) (hit-normal hit))))
-             (setf color (v-mul color (v-mul-s ncolor at))))))))
+               (v-mul color (v-mul-s ncolor at)))))))
        
 
 (defun to-255 (color)
-  (let ((c255 (mapcar #'* color '(255.9 255.9 255.9))))
+  (let ((c255 (mapcar #'* color '(255.99 255.99 255.99))))
     (mapcar #'floor c255)))
                 
 (defun writeppm (data) 
@@ -173,7 +174,7 @@
     (format ppm "P3~%~A ~A~%255~%" *width* *height*)
     (loop for row in data do
           (loop for color in row do
-                (format ppm "~{~A ~} " (to-255 color)))
+                (format ppm "~{~A ~}" (to-255 color)))
           (format ppm "~%"))))
 
 (defun main ()
@@ -194,9 +195,6 @@
                         (setf dir (v-sub dir (ray-origin ray)))
                         (setf dir (v-unit dir))
                         (setf (ray-direction ray) dir)
-                        (setf color (v-add color (trace-ray world ray 0))))
-                      (v-div-s color *samples*)))))))
+                        (setf color (v-add color (trace-ray world ray 0)))))
+                    (v-div-s color *samples*))))))
     (writeppm data)))
-
-
-;;(main)
