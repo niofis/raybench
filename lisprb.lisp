@@ -2,7 +2,7 @@
 
 (defparameter *width* 1280)
 (defparameter *height* 720)
-(defparameter *samples* 50)
+(defparameter *samples* 1)
 (defparameter *max-depth* 5)
 
 (defstruct (vec
@@ -71,17 +71,17 @@
          (a (v-dot dir dir))
          (b (v-dot oc dir))
          (c (- (v-dot oc oc) (* (sphere-radius sphere) (sphere-radius sphere))))
-         (dis (- (* b b) (* a c)))
-         (e (sqrt dis))
-         (t1 (/ (- (- 0.0 b) e) a))
-         (t2 (/ (+ (- 0.0 b) e) a)))
-    (cond ((and (> dis 0) (> t1 0.007))
-           (let ((point (ray-point ray t1)))
-             (hit-new t1 point (v-unit (v-sub point (sphere-center sphere))) sphere)))
-          ((and (> dis 0) (> t2 0.007))
-           (let ((point (ray-point ray t2)))
-             (hit-new t2 point (v-unit (v-sub point (sphere-center sphere))) sphere)))
-          (t (hit-new 1e15 nil nil nil)))))
+         (dis (- (* b b) (* a c))))
+    (if (> dis 0)
+      (let* ((e (sqrt dis))
+             (t1 (/ (- (- b) e) a))
+             (t2 (/ (+ (- b) e) a)))
+        (if (> t1 0.007)
+          (let ((point (ray-point ray t1)))
+            (hit-new t1 point (v-unit (v-sub point (sphere-center sphere))) sphere))
+          (if (> t2 0.007)
+            (let ((point (ray-point ray t2)))
+              (hit-new t1 point (v-unit (v-sub point (sphere-center sphere))) sphere))))))))
          
 
 (defun world-new ()
@@ -117,8 +117,7 @@
         (hit (hit-new 1e16 nil nil nil))
         (color #(0.0 0.0 0.0)))
     (loop for lh in hits do
-          (cond ((< (hit-distance lh) (hit-distance hit))
-                  (setf hit lh))))
+          (if (and (not (null lh)) (< (hit-distance lh) (hit-distance hit))) (setf hit lh)))
     (setf color (sphere-color (hit-sphere hit)))
     (cond ((null (hit-point hit)) #(0.0 0.0 0.0))
           ((>= depth *max-depth*) #(0.0 0.0 0.0))
