@@ -138,7 +138,7 @@
                 (format ppm "~{~A ~}" (coerce (to-255 color) 'list)))
           (format ppm "~%"))))
 
-(defun main (argv)
+(defun main ()
   (let* ((world (world-new))
         (camera (world-camera world))
         (lt (camera-lt camera))
@@ -159,4 +159,9 @@
                     (v-div-s color *samples*))))))
     (writeppm data)))
 
-(main nil)
+;(require :sb-sprof)
+;(sb-sprof:start-profiling)    
+(main)
+;(sb-sprof:stop-profiling)
+;(sb-sprof:report)
+
