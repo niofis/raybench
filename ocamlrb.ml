@@ -20,11 +20,12 @@ let vunit v1 = vdivs v1 (norm v1)
 type ray = {origin:vector; direction:vector}
 let point r d = vadd r.origin (vmuls r.direction d)
 
-type hit = {distance:float; point:vector; normal:vector}
-
 type camera = {eye:vector; lt:vector; rt:vector; lb:vector}
 
 type sphere = {center:vector; radius:float; color:vector; islight:bool}
+
+type hit = {distance:float; point:vector; normal:vector; sphere:sphere; didhit:bool}
+
 let sphit sp ry =
   let oc = vsub ry.origin sp.center in
   let a = dot ry.direction ry.direction in
@@ -36,16 +37,16 @@ let sphit sp ry =
     let t = (-.b -. e) /. a in
     if t > 0.007 then
       let pt = point ry t in
-      {distance = t; point = pt; normal = (vunit (vsub pt sp.center))}
+      {distance = t; point = pt; normal = (vunit (vsub pt sp.center)); sphere = sp; didhit = true}
     else
       let t2 = (-.b +. e) /. a in
       if t2 > 0.007 then
         let pt2 = point ry t2 in
-        {distance = t2; point = pt2; normal = (vunit (vsub pt2 sp.center))}
+        {distance = t2; point = pt2; normal = (vunit (vsub pt2 sp.center)); sphere = sp; didhit = true}
       else
-        {distance = 1e16; point = zero; normal = zero}
+        {distance = 1e16; point = zero; normal = zero; sphere = sp; didhit = false}
   else
-    {distance = 1e16; point = zero; normal = zero}
+    {distance = 1e16; point = zero; normal = zero; sphere = sp; didhit = false}
 
 type world = {camera:camera; spheres:sphere array}
 let world = {
@@ -77,6 +78,21 @@ let rec trace world ray depth =
     zero
   else
     begin
-      let hit = {distance=1e16; point=zero; normal=zero} in
-      zero
+      let hittest sp = sphit sp ray in
+      let hits = Array.map hittest world.spheres in
+      let compare_hits h1 h2 = if h1.distance < h2.distance then h1 else h2 in
+      let closest = Array.fold_right compare_hits hits in
+      if closest.didhit == false then
+        zero
+      else if closest.sphere.islight == true then
+        closest.sphere.color
+      else
+        begin
+          let nray = {origin=closest.point; direction = rnddome closest.normal} in
+          let color = trace world nray (depth + 1) in
+          let at = dot nray.direction closest.normal in
+          vmul color (vmuls color at)
+        end
     end
+
+
