@@ -2,7 +2,7 @@
 
 (defparameter *width* 1280)
 (defparameter *height* 720)
-(defparameter *samples* 1)
+(defparameter *samples* 50)
 (defparameter *max-depth* 5)
 
 (defstruct (vec
@@ -41,7 +41,7 @@
 (defstruct (ray
              (:conc-name ray-)
              (:constructor ray-new (origin direction))
-             (:type list))
+             (:type vector))
   origin direction)
 
 (defun ray-point (ray dist)
@@ -50,19 +50,19 @@
 (defstruct (hit
              (:conc-name hit-)
              (:constructor hit-new (distance point normal sphere))
-             (:type list))
+             (:type vector))
   distance point normal sphere)
 
 (defstruct (camera 
              (:conc-name camera-)
              (:constructor camera-new (eye lt rt lb))
-             (:type list))
+             (:type vector))
   eye lt rt lb)
 
 (defstruct (sphere
              (:conc-name sphere-)
              (:constructor sphere-new (center radius color is-light))
-             (:type list))
+             (:type vector))
   center radius color is-light)
 
 (defun sphere-hit (sphere ray)
@@ -85,15 +85,15 @@
          
 
 (defun world-new ()
-  (list (camera-new (v-new 0.0 4.5 75.0) (v-new -8.0 9.0 50.0) (v-new 8.0 9.0 50.0) (v-new -8.0 0.0 50.0))
-        (list (sphere-new (v-new 0.0 -10002.0 0.0) 9999.0 (v-new 1.0 1.0 1.0) nil)
-              (sphere-new (v-new -10012.0 0.0 0.0) 9999.0 (v-new 1.0 0.0 0.0) nil)
-              (sphere-new (v-new 10012.0 0.0 0.0) 9999.0 (v-new 0.0 1.0 0.0) nil)
-              (sphere-new (v-new 0.0 0.0 -10012.0) 9999.0 (v-new 1.0 1.0 1.0) nil)
-              (sphere-new (v-new 0.0 10012.0 0.0) 9999.0 (v-new 1.0 1.0 1.0) t)
-              (sphere-new (v-new -5.0 0.0 2.0) 2.0 (v-new 1.0 1.0 0.0) nil)
-              (sphere-new (v-new 0.0 5.0 -1.0) 4.0 (v-new 1.0 0.0 0.0) nil)
-              (sphere-new (v-new 8.0 5.0 -1.0) 2.0 (v-new 0.0 0.0 1.0) nil))))
+  (list (camera-new #(0.0 4.5 75.0) #(-8.0 9.0 50.0) #(8.0 9.0 50.0) #(-8.0 0.0 50.0))
+        (list (sphere-new #(0.0 -10002.0 0.0) 9999.0 #(1.0 1.0 1.0) nil)
+              (sphere-new #(-10012.0 0.0 0.0) 9999.0 #(1.0 0.0 0.0) nil)
+              (sphere-new #(10012.0 0.0 0.0) 9999.0 #(0.0 1.0 0.0) nil)
+              (sphere-new #(0.0 0.0 -10012.0) 9999.0 #(1.0 1.0 1.0) nil)
+              (sphere-new #(0.0 10012.0 0.0) 9999.0 #(1.0 1.0 1.0) t)
+              (sphere-new #(-5.0 0.0 2.0) 2.0 #(1.0 1.0 0.0) nil)
+              (sphere-new #(0.0 5.0 -1.0) 4.0 #(1.0 0.0 0.0) nil)
+              (sphere-new #(8.0 5.0 -1.0) 2.0 #(0.0 0.0 1.0) nil))))
 
 (defun world-camera (world)
   (nth 0 world))
@@ -146,17 +146,16 @@
         (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera)) *height*))
         (data (loop for y from 0.0 to (- *height* 1.0) collect
                 (loop for x from 0.0 to (- *width* 1.0) collect
-                  (let* ((color #(0.0 0.0 0.0))
-                         (ray (ray-new (camera-eye camera) #(0.0 0.0 0.0))))
+                  (let ((color #(0.0 0.0 0.0))
+                         (ray (ray-new (camera-eye camera) nil))
+                         (dir nil))
                     (loop for i from 1 to *samples* do
-                      (let ((dir #(0.0 0.0 0.0)))
                         (setf dir (v-add lt (v-add
                                             (v-mul-s vdu (+ x (random 1.0)))
                                             (v-mul-s vdv (+ y (random 1.0))))))
-                        (setf dir (v-sub dir (ray-origin ray)))
-                        (setf dir (v-unit dir))
+                        (setf dir (v-unit (v-sub dir (ray-origin ray))))
                         (setf (ray-direction ray) dir)
-                        (setf color (v-add color (trace-ray world ray 0)))))
+                        (setf color (v-add color (trace-ray world ray 0))))
                     (v-div-s color *samples*))))))
     (writeppm data)))
 
