@@ -1,4 +1,4 @@
-(declaim (optimize (speed 3) (safety 0) (space 0)))
+(declaim (optimize (speed 3) (safety 0) (space 0) (debug 0) (compilation-speed 0)))
 
 (defparameter *width* 1280)
 (defparameter *height* 720)
@@ -161,8 +161,4 @@
                     (v-div-s color *samples*))))))
     (writeppm data)))
 
-;(require :sb-sprof)
-;(sb-sprof:start-profiling)
-;(main nil)
-;(sb-sprof:stop-profiling)
-;(sb-sprof:report)
+(main nil)
