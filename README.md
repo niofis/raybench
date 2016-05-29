@@ -136,3 +136,12 @@ real    14m2.406s
 user    13m55.292s
 sys     0m1.416s
 ```
+
+Lisp (lisprb.lisp)
+```
+$ time sbcl --script lisprb.lisp 
+
+real    24m43.216s
+user    24m27.772s
+sys     0m4.972s
+```
