@@ -145,3 +145,17 @@ real    24m43.216s
 user    24m27.772s
 sys     0m4.972s
 ```
+
+OCaml (ocamlrb.ml)
+
+```
+$ ocamlopt -o ocamlrb ocamlrb.ml
+```
+
+```
+$ time ./ocamlrb
+
+real    4m11.782s
+user    4m9.572s
+sys     0m0.364s
+```
