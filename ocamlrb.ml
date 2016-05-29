@@ -1,6 +1,6 @@
 let width = 1280.
 let height = 720.
-let samples = 1.
+let samples = 50.
 let max_depth = 1
 
 type vector = {x:float; y:float; z:float}
@@ -24,8 +24,8 @@ type camera = {eye:vector; lt:vector; rt:vector; lb:vector}
 
 type sphere = {center:vector; radius:float; color:vector; islight:bool}
 
-type hit = {distance:float; point:vector; normal:vector; sphere:sphere; didhit:bool}
-let nohit = {distance=1e16; point=zero; normal=zero; sphere={center=zero; radius=0.; color=zero; islight=false}; didhit=false}
+type hit = {distance:float; point:vector; normal:vector; sphere:sphere;}
+let nohit = {distance=1e16; point=zero; normal=zero; sphere={center=zero; radius=0.; color=zero; islight=false};}
 
 let sphit sp ry =
   let oc = vsub ry.origin sp.center in
@@ -38,12 +38,12 @@ let sphit sp ry =
     let t = (-.b -. e) /. a in
     if t > 0.007 then
       let pt = point ry t in
-      {distance = t; point = pt; normal = (vunit (vsub pt sp.center)); sphere = sp; didhit = true}
+      {distance = t; point = pt; normal = (vunit (vsub pt sp.center)); sphere = sp;}
     else
       let t2 = (-.b +. e) /. a in
       if t2 > 0.007 then
         let pt2 = point ry t2 in
-        {distance = t2; point = pt2; normal = (vunit (vsub pt2 sp.center)); sphere = sp; didhit = true}
+        {distance = t2; point = pt2; normal = (vunit (vsub pt2 sp.center)); sphere = sp;}
       else
         nohit
   else
@@ -79,15 +79,17 @@ let rec trace world ray depth =
   let hits = Array.map hittest world.spheres in
   let compare_hits h1 h2 = if h1.distance < h2.distance then h1 else h2 in
   let closest = Array.fold_right compare_hits hits nohit in
-  if closest.didhit && closest.sphere.islight = false && depth < max_depth then
+  if closest = nohit then
+    zero
+  else if closest.sphere.islight then
+    closest.sphere.color
+  else if depth < max_depth then
       let nray = {origin=closest.point; direction = rnddome closest.normal} in
       let ncolor = trace world nray (depth + 1) in
       let at = dot nray.direction closest.normal in
       vmul closest.sphere.color (vmuls ncolor at)
-  else if closest.didhit = false || depth >= max_depth then
-    zero
   else
-    closest.sphere.color
+    zero
 
 let to255 v = truncate (v *. 255.99)
 
@@ -119,4 +121,5 @@ let main () =
   let rec cols y x = if x < width then [(vdivs (samp x y 0.) samples)]@(cols y (x +. 1.)) else [] in
   let rec rows y = if y < height then [cols y 0.]@(rows (y +. 1.)) else [] in
   writeppm (rows 0.)
-  
+ 
+let run = main ();
