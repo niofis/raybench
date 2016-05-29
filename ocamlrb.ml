@@ -1,7 +1,7 @@
-let width = 1280
-let height = 720
-let samples = 50
-let max_depth = 5
+let width = 1280.
+let height = 720.
+let samples = 1.
+let max_depth = 1
 
 type vector = {x:float; y:float; z:float}
 
@@ -25,6 +25,7 @@ type camera = {eye:vector; lt:vector; rt:vector; lb:vector}
 type sphere = {center:vector; radius:float; color:vector; islight:bool}
 
 type hit = {distance:float; point:vector; normal:vector; sphere:sphere; didhit:bool}
+let nohit = {distance=1e16; point=zero; normal=zero; sphere={center=zero; radius=0.; color=zero; islight=false}; didhit=false}
 
 let sphit sp ry =
   let oc = vsub ry.origin sp.center in
@@ -44,9 +45,9 @@ let sphit sp ry =
         let pt2 = point ry t2 in
         {distance = t2; point = pt2; normal = (vunit (vsub pt2 sp.center)); sphere = sp; didhit = true}
       else
-        {distance = 1e16; point = zero; normal = zero; sphere = sp; didhit = false}
+        nohit
   else
-    {distance = 1e16; point = zero; normal = zero; sphere = sp; didhit = false}
+    nohit
 
 type world = {camera:camera; spheres:sphere array}
 let world = {
@@ -56,17 +57,17 @@ let world = {
             lb = {x=(-8.); y=0.; z=50.}};
   spheres = [| 
     {center = {x=0.; y=(-10002.); z=0.};radius = 9999.;color = {x=1.; y=1.; z=1.};islight = false;};
-    {center = {x=(-10002.); y=0.; z=0.};radius = 9999.;color = {x=1.; y=0.; z=0.};islight = false;};
-    {center = {x=10002.; y=0.; z=0.};radius = 9999.;color = {x=0.; y=1.; z=0.};islight = false;};
-    {center = {x=0.; y=0.; z=(-10002.)};radius = 9999.;color = {x=1.; y=1.; z=1.};islight = false;};
-    {center = {x=0.; y=10002.; z=0.};radius = 9999.;color = {x=1.; y=1.; z=1.};islight = true;};
+    {center = {x=(-10012.); y=0.; z=0.};radius = 9999.;color = {x=1.; y=0.; z=0.};islight = false;};
+    {center = {x=10012.; y=0.; z=0.};radius = 9999.;color = {x=0.; y=1.; z=0.};islight = false;};
+    {center = {x=0.; y=0.; z=(-10012.)};radius = 9999.;color = {x=1.; y=1.; z=1.};islight = false;};
+    {center = {x=0.; y=10012.; z=0.};radius = 9999.;color = {x=1.; y=1.; z=1.};islight = true;};
     {center = {x=(-5.); y=0.; z=2.};radius = 2.;color = {x=1.; y=1.; z=0.};islight = false;};
     {center = {x=0.; y=5.; z=(-1.)};radius = 4.;color = {x=1.; y=0.; z=0.};islight = false;};
     {center = {x=8.; y=5.; z=(-1.)};radius = 2.;color = {x=0.; y=0.; z=1.};islight = false;}
   |]}
 
 let rec rnddome normal = 
-  let pt = vunit {x=Random.float(1.); y=Random.float(1.); z=Random.float(1.);} in
+  let pt = vunit {x=2. *. Random.float(1.) -. 1.; y=2. *. Random.float(1.) -. 1.; z=2. *. Random.float(1.) -. 1.;} in
   let d = dot pt normal in
     if d < 0. then
       rnddome normal
@@ -74,25 +75,48 @@ let rec rnddome normal =
       pt
 
 let rec trace world ray depth =
-  if depth >= max_depth then
+  let hittest sp = sphit sp ray in
+  let hits = Array.map hittest world.spheres in
+  let compare_hits h1 h2 = if h1.distance < h2.distance then h1 else h2 in
+  let closest = Array.fold_right compare_hits hits nohit in
+  if closest.didhit && closest.sphere.islight = false && depth < max_depth then
+      let nray = {origin=closest.point; direction = rnddome closest.normal} in
+      let ncolor = trace world nray (depth + 1) in
+      let at = dot nray.direction closest.normal in
+      vmul closest.sphere.color (vmuls ncolor at)
+  else if closest.didhit = false || depth >= max_depth then
     zero
   else
-    begin
-      let hittest sp = sphit sp ray in
-      let hits = Array.map hittest world.spheres in
-      let compare_hits h1 h2 = if h1.distance < h2.distance then h1 else h2 in
-      let closest = Array.fold_right compare_hits hits in
-      if closest.didhit == false then
-        zero
-      else if closest.sphere.islight == true then
-        closest.sphere.color
+    closest.sphere.color
+
+let to255 v = truncate (v *. 255.99)
+
+let writeppm data =
+  let ppm = open_out "ocamlrb.ppm" in
+  Printf.fprintf ppm "P3\n%i %i\n255\n" (truncate width) (truncate height);
+  List.iter (fun row -> List.iter (fun color -> Printf.fprintf ppm "%i %i %i " (to255 color.x) (to255 color.y) (to255 color.z)) row) data;
+  close_out ppm;
+  zero
+
+
+let main () =
+  let world = world in
+  let vdu = vdivs (vsub world.camera.rt world.camera.lt) width in
+  let vdv = vdivs (vsub world.camera.lb world.camera.lt) height in
+  let rec samp x y s = 
+    if s < samples then
+      let dir = (vunit (vsub 
+          (vadd world.camera.lt 
+            (vadd 
+              (vmuls vdu (x +. Random.float(1.))) 
+              (vmuls vdv (y +. Random.float(1.)))))
+          world.camera.eye)) in
+      let ray = {origin=world.camera.eye; direction = dir} in
+      (vadd (trace world ray 0) (samp x y (s +. 1.)))
       else
-        begin
-          let nray = {origin=closest.point; direction = rnddome closest.normal} in
-          let color = trace world nray (depth + 1) in
-          let at = dot nray.direction closest.normal in
-          vmul color (vmuls color at)
-        end
-    end
-
-
+        zero
+  in
+  let rec cols y x = if x < width then [(vdivs (samp x y 0.) samples)]@(cols y (x +. 1.)) else [] in
+  let rec rows y = if y < height then [cols y 0.]@(rows (y +. 1.)) else [] in
+  writeppm (rows 0.)
+  
