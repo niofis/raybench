@@ -2,7 +2,7 @@
 
 (defconstant WIDTH 1280)
 (defconstant HEIGHT 720)
-(defconstant SAMPLES 2)
+(defconstant SAMPLES 50)
 (defconstant MAX-DEPTH 5)
 
 
