@@ -155,7 +155,7 @@ $ ocamlopt -o ocamlrb ocamlrb.ml
 ```
 $ time ./ocamlrb
 
-real    4m11.782s
-user    4m9.572s
-sys     0m0.364s
+real    5m57.642s
+user    5m54.604s
+sys     0m0.532s
 ```
