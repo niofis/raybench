@@ -1,7 +1,7 @@
 let width = 1280.
 let height = 720.
 let samples = 50.
-let max_depth = 1
+let max_depth = 5
 
 type vector = {x:float; y:float; z:float}
 
