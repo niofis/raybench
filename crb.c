@@ -143,7 +143,7 @@ struct world world_new()
   //Right
   world.spheres[2] = sphere_new(v3_new(10012.0f, 0.0f, 0.0f), 9999.f, v3_new(0.0f,1.0f,0.0f));
   //Back
-  world.spheres[3] = sphere_new(v3_new(0.0f, 0.0f, -10020.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
+  world.spheres[3] = sphere_new(v3_new(0.0f, 0.0f, -10012.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
   //Ceiling
   world.spheres[4] = sphere_new(v3_new(0.0f, 10012.0f, 0.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
   //Light
