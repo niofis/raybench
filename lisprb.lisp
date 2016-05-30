@@ -1,15 +1,18 @@
 (declaim (optimize (speed 3) (safety 0) (space 0) (debug 0) (compilation-speed 0)))
 
-(defparameter *width* 1280)
-(defparameter *height* 720)
-(defparameter *samples* 50)
-(defparameter *max-depth* 5)
+(defconstant WIDTH 1280)
+(defconstant HEIGHT 720)
+(defconstant SAMPLES 2)
+(defconstant MAX-DEPTH 5)
+
 
 (defstruct (vec
              (:conc-name v-)
              (:constructor v-new (x y z))
              (:type (vector float)))
   x y z)
+
+(defconstant ZERO (v-new 0.0 0.0 0.0))
 
 (defun v-add (v1 v2)
   (v-new (+ (v-x v1) (v-x v2)) (+ (v-y v1) (v-y v2)) (+ (v-z v1) (v-z v2))))
@@ -65,6 +68,8 @@
              (:type vector))
   center radius color is-light)
 
+(defconstant NOHIT (hit-new 1e16 ZERO ZERO (sphere-new ZERO 0.0 ZERO nil)))
+
 (defun sphere-hit (sphere ray)
   (let* ((oc (v-sub (ray-origin ray) (sphere-center sphere)))
          (dir (ray-direction ray))
@@ -81,7 +86,9 @@
             (hit-new t1 point (v-unit (v-sub point (sphere-center sphere))) sphere))
           (if (> t2 0.007)
             (let ((point (ray-point ray t2)))
-              (hit-new t1 point (v-unit (v-sub point (sphere-center sphere))) sphere))))))))
+              (hit-new t1 point (v-unit (v-sub point (sphere-center sphere))) sphere))
+              NOHIT)))
+      NOHIT)))
          
 
 (defun world-new ()
@@ -102,37 +109,29 @@
   (nth 1 world))
 
 (defun rnd-dome (normal)
-  (let ((p #(0.0 0.0 0.0))
-        (d 0))
-    (loop
-      (setf p (v-new (- (* 2.0 (random 1.0)) 1.0)
+  (let ((p (v-new (- (* 2.0 (random 1.0)) 1.0)
                 (- (* 2.0 (random 1.0)) 1.0)
-                (- (* 2.0 (random 1.0)) 1.0)))
-      (setf p (v-unit p))
-      (setf d (v-dot p normal))
-      (when (> d 0) (return p)))))
+                (- (* 2.0 (random 1.0)) 1.0))))
+    (if (< (v-dot p normal) 0) (rnd-dome normal) p)))
 
 (defun trace-ray (world ray depth)
-  (let ((hits (loop for sp in (world-spheres world) collect (sphere-hit sp ray)))
-        (hit (hit-new 1e16 nil nil nil))
-        (color #(0.0 0.0 0.0)))
-    (loop for lh in hits do
-          (if (and (not (null lh)) (< (hit-distance lh) (hit-distance hit))) (setf hit lh)))
-    (setf color (sphere-color (hit-sphere hit)))
-    (cond ((null (hit-point hit)) #(0.0 0.0 0.0))
-          ((>= depth *max-depth*) #(0.0 0.0 0.0))
+  (let* ((hits (loop for sp in (world-spheres world) collect (sphere-hit sp ray)))
+        (hit (reduce (lambda (h1 h2) (if (< (hit-distance h1) (hit-distance h2)) h1 h2)) hits))
+        (color (sphere-color (hit-sphere hit))))
+    (cond ((eq hit NOHIT) ZERO)
           ((sphere-is-light (hit-sphere hit)) color)
-          (t (let* ((nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit))))
+          ((< depth MAX-DEPTH) (let* ((nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit))))
                   (ncolor (trace-ray world nray (+ depth 1)))
                   (at (v-dot (ray-direction nray) (hit-normal hit))))
-               (v-mul color (v-mul-s ncolor at)))))))
+               (v-mul color (v-mul-s ncolor at))))
+          (t ZERO))))
        
 (defun to-255 (color)
   (map 'vector #'floor (v-mul-s color 255.99)))
                 
 (defun writeppm (data) 
   (with-open-file (ppm "lisprb.ppm" :direction :output :if-exists :supersede)
-    (format ppm "P3~%~A ~A~%255~%" *width* *height*)
+    (format ppm "P3~%~A ~A~%255~%" WIDTH HEIGHT)
     (loop for row in data do
           (loop for color in row do
                 (format ppm "~{~A ~}" (coerce (to-255 color) 'list)))
@@ -142,21 +141,21 @@
   (let* ((world (world-new))
         (camera (world-camera world))
         (lt (camera-lt camera))
-        (vdu (v-div-s (v-sub (camera-rt camera) (camera-lt camera)) *width*))
-        (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera)) *height*))
-        (data (loop for y from 0.0 to (- *height* 1.0) collect
-                (loop for x from 0.0 to (- *width* 1.0) collect
-                  (let ((color #(0.0 0.0 0.0))
+        (vdu (v-div-s (v-sub (camera-rt camera) (camera-lt camera)) WIDTH))
+        (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera)) HEIGHT))
+        (data (loop for y from 0.0 to (- HEIGHT 1.0) collect
+                (loop for x from 0.0 to (- WIDTH 1.0) collect
+                  (let ((color ZERO)
                          (ray (ray-new (camera-eye camera) nil))
                          (dir nil))
-                    (loop for i from 1 to *samples* do
+                    (dotimes (_ SAMPLES)
                         (setf dir (v-add lt (v-add
                                             (v-mul-s vdu (+ x (random 1.0)))
                                             (v-mul-s vdv (+ y (random 1.0))))))
                         (setf dir (v-unit (v-sub dir (ray-origin ray))))
                         (setf (ray-direction ray) dir)
                         (setf color (v-add color (trace-ray world ray 0))))
-                    (v-div-s color *samples*))))))
+                    (v-div-s color SAMPLES))))))
     (writeppm data)))
 
 ;(require :sb-sprof)
