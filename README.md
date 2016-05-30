@@ -149,13 +149,13 @@ sys     0m4.972s
 OCaml (ocamlrb.ml)
 
 ```
-$ ocamlopt -o ocamlrb ocamlrb.ml
+$ ocamlopt -o ocamlrb -unsafe ocamlrb.ml
 ```
 
 ```
 $ time ./ocamlrb
 
-real    4m11.782s
-user    4m9.572s
-sys     0m0.364s
+real    5m38.974s
+user    5m35.960s
+sys     0m0.532s
 ```
