@@ -5,7 +5,6 @@ width = 1280.0::Float
 height = 720.0::Float
 samples = 50::Int
 max_depth = 5::Int
-zero = Vector3 0 0 0
 
 world = World {
       camera =  Camera (Vector3 0 4.5 75) (Vector3 (-8) 9 50) (Vector3 8 9 50) (Vector3 (-8) 0 50), 
@@ -64,14 +63,14 @@ data Sphere = Sphere {center :: Vector3, radius :: Float, color :: Vector3, isLi
 data Hit = Hit {distance :: Float, point :: Vector3, normal :: Vector3, hitcolor :: Vector3, sphere :: Sphere} deriving (Show)
 data World = World {camera :: Camera, spheres :: [Sphere]} deriving (Show)
 
-noHit = Hit 1e16 zero zero zero (Sphere zero 0 zero False)
+emptyHit = Hit 0 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 0 0 0) (Sphere (Vector3 0 0 0) 0 (Vector3 0 0 0) False)
 
 rayGetPoint :: Ray -> Float -> Vector3
 rayGetPoint (Ray org dir) dist = org `vadd` (dir `vmulS` dist)
 
 sphereGetNormal (Sphere cntr _ _ _) point = vunit (point `vsub` cntr)
 
-sphereHit :: Sphere -> Ray -> Hit
+sphereHit :: Sphere -> Ray -> Maybe Hit
 sphereHit sphere ray =
   let oc = (origin ray) `vsub` (center sphere)
       a = (direction ray) `vdot`(direction ray)
@@ -79,21 +78,21 @@ sphereHit sphere ray =
       c = (oc `vdot`oc) - (radius sphere) * (radius sphere)
       disc = (b * b) - (a * c)
    in if disc <= 0 
-         then noHit
+         then Nothing
          else let e = sqrt disc
                in let t1 = ((-b) - e) / a
                    in if t1 > 0.007
                          then
                          let pnt = rayGetPoint ray t1
                              nrml = sphereGetNormal sphere pnt
-                          in Hit t1 pnt nrml (color sphere) sphere
+                          in Just (Hit t1 pnt nrml (color sphere) sphere)
                           else let t2 = ((-b) + e) / a
                                 in if t2 > 0.007
                                       then
                                       let pnt2 = rayGetPoint ray t2
                                           nrml2 = sphereGetNormal sphere pnt2
-                                       in Hit t2 pnt2 nrml2 (color sphere) sphere
-                                       else noHit
+                                       in Just (Hit t2 pnt2 nrml2 (color sphere) sphere)
+                                       else Nothing
 
 pixels :: Float -> Float -> [[Pixel]]
 pixels width height =
@@ -140,34 +139,43 @@ rndDome rnds nrml =
    in if d < 0 then rndDome (drop 3 rnds) nrml
                else p
 
-compareHits :: Hit -> Hit -> Hit
-compareHits h1 h2
-  |(distance h1) < (distance h2) = h1
-  |otherwise = h2
+closestHit :: [Maybe Hit] -> Maybe Hit
+closestHit (x:[]) = x
+closestHit (Nothing:xs) = closestHit xs
+closestHit (x:Nothing:xs) = closestHit (x:xs)
+closestHit (a@(Just x1):b@(Just x2):xs)
+  | (distance x1) < (distance x2) = closestHit (a:xs)
+  | otherwise = closestHit (b:xs)
 
-closestHit :: [Hit] -> Hit
-closestHit hits = foldr compareHits noHit hits
-
-traceRay :: Int -> [Sphere] -> Ray -> Vector3
+traceRay :: Int -> [Sphere] -> Ray -> Maybe Hit
 traceRay depth spheres ray = mapHit $ closestHit (map (\s -> sphereHit s ray) spheres)
   where
-    mapHit hit = 
+    mapHit Nothing = Nothing
+    mapHit (Just hit) = 
          if depth >= max_depth
-                then zero
+                then Nothing 
                 else if (isLight $ sphere hit) == True
-                      then hitcolor hit
+                      then Just hit
                       else let nray = Ray (point hit) (rndDome (rndsD (floor $ (vnorm $ point hit) * 1928374)) (normal hit))
                                at = (direction nray) `vdot` (normal hit)
-                               nc = traceRay (depth + 1) spheres nray
-                            in (hitcolor hit) `vmul` (nc `vmulS` at)
+                               nc = getMHitColor $ traceRay (depth + 1) spheres nray
+                               ncolor = (hitcolor hit) `vmul` (nc `vmulS` at)
+                            in Just (Hit (distance hit) (point hit) (normal hit) (ncolor) (sphere hit))
 
 
-traceLine :: [Sphere] -> [[Ray]] -> [[Vector3]]
+traceLine :: [Sphere] -> [[Ray]] -> [[Maybe Hit]]
 traceLine spheres rayPkg = 
   map (\rays -> map (traceRay 0 spheres) rays) rayPkg
 
-avgColor :: [Vector3] -> Vector3
-avgColor colors = (foldr vadd zero colors) `vdivS` (fromIntegral samples :: Float)
+
+getMHitColor :: Maybe Hit -> Vector3
+getMHitColor Nothing = Vector3 0 0 0
+getMHitColor (Just (Hit _ _ _ clr _)) = clr
+
+avgHitsColor :: [Maybe Hit] -> Vector3
+avgHitsColor hits = (foldr addColor (Vector3 0 0 0) hits) `vdivS` (fromIntegral samples :: Float)
+  where
+    addColor (Just (Hit _ _ _ clr _)) acc = clr `vadd` acc 
 
 render :: World -> [[Vector3]]
 render (World camera spheres) = 
@@ -175,7 +183,7 @@ render (World camera spheres) =
       rays = primRays camera pixels'
       hits = map (traceLine spheres) rays
    in
-    map (\line -> map (\hits -> avgColor hits) line) hits
+    map (\line -> map (\hits -> avgHitsColor hits) line) hits
         
            
 main = do
