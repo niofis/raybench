@@ -38,24 +38,24 @@ let sphit sp ry =
     let t = (-.b -. e) /. a in
     if t > 0.007 then
       let pt = point ry t in
-      {distance = t; point = pt; normal = (vunit (vsub pt sp.center)); sphere = sp;}
+      {distance = t; point = pt; normal = vsub pt sp.center |> vunit; sphere = sp;}
     else
       let t2 = (-.b +. e) /. a in
       if t2 > 0.007 then
         let pt2 = point ry t2 in
-        {distance = t2; point = pt2; normal = (vunit (vsub pt2 sp.center)); sphere = sp;}
+        {distance = t2; point = pt2; normal = vsub pt2 sp.center |> vunit; sphere = sp;}
       else
         nohit
   else
     nohit
 
-type world = {camera:camera; spheres:sphere array}
+type world = {camera:camera; spheres:sphere list}
 let world = {
   camera = {eye = {x=0.; y=4.5; z=75.};
             lt = {x=(-8.); y=9.; z=50.};
             rt = {x=8.; y=9.; z=50.};
             lb = {x=(-8.); y=0.; z=50.}};
-  spheres = [| 
+  spheres = [
     {center = {x=0.; y=(-10002.); z=0.};radius = 9999.;color = {x=1.; y=1.; z=1.};islight = false;};
     {center = {x=(-10012.); y=0.; z=0.};radius = 9999.;color = {x=1.; y=0.; z=0.};islight = false;};
     {center = {x=10012.; y=0.; z=0.};radius = 9999.;color = {x=0.; y=1.; z=0.};islight = false;};
@@ -64,21 +64,20 @@ let world = {
     {center = {x=(-5.); y=0.; z=2.};radius = 2.;color = {x=1.; y=1.; z=0.};islight = false;};
     {center = {x=0.; y=5.; z=(-1.)};radius = 4.;color = {x=1.; y=0.; z=0.};islight = false;};
     {center = {x=8.; y=5.; z=(-1.)};radius = 2.;color = {x=0.; y=0.; z=1.};islight = false;}
-  |]}
+  ]}
+
+let rnd2 () = 2. *. Random.float(1.) -. 1.
 
 let rec rnddome normal = 
-  let pt = vunit {x=2. *. Random.float(1.) -. 1.; y=2. *. Random.float(1.) -. 1.; z=2. *. Random.float(1.) -. 1.;} in
+  let pt = vunit {x=rnd2 (); y=rnd2 (); z=rnd2 ();} in
   let d = dot pt normal in
-    if d < 0. then
-      rnddome normal
-    else
-      pt
+    if d < 0. then rnddome normal else pt
 
 let rec trace world ray depth =
   let hittest sp = sphit sp ray in
-  let hits = Array.map hittest world.spheres in
+  let hits = List.map hittest world.spheres in
   let compare_hits h1 h2 = if h1.distance < h2.distance then h1 else h2 in
-  let closest = Array.fold_right compare_hits hits nohit in
+  let closest = List.fold_left compare_hits nohit hits in
   if closest = nohit then
     zero
   else if closest.sphere.islight then
@@ -92,14 +91,13 @@ let rec trace world ray depth =
     zero
 
 let to255 v = truncate (v *. 255.99)
+let colorToStr ppm color = Printf.fprintf ppm "%i %i %i " (to255 color.x) (to255 color.y) (to255 color.z)
 
 let writeppm data =
   let ppm = open_out "ocamlrb.ppm" in
   Printf.fprintf ppm "P3\n%i %i\n255\n" (truncate width) (truncate height);
-  List.iter (fun row -> List.iter (fun color -> Printf.fprintf ppm "%i %i %i " (to255 color.x) (to255 color.y) (to255 color.z)) row) data;
-  close_out ppm;
-  zero
-
+  List.iter (fun row -> List.iter (colorToStr ppm) row) data;
+  close_out ppm;;
 
 let main () =
   let world = world in
@@ -122,4 +120,4 @@ let main () =
   let rec rows y = if y < height then [cols y 0.]@(rows (y +. 1.)) else [] in
   writeppm (rows 0.)
  
-let run = main ();
+let _ = main ();

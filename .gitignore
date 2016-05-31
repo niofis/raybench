@@ -32,3 +32,8 @@
 # Debug files
 *.dSYM/
 ##########C END##########
+hsrb
+lisprb
+ocamlrb
+ocamlrb.cmi
+ocamlrb.cmx
