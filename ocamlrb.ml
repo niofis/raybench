@@ -116,8 +116,8 @@ let main () =
       else
         zero
   in
-  let rec cols y x = if x < width then [(vdivs (samp x y 0.) samples)]@(cols y (x +. 1.)) else [] in
-  let rec rows y = if y < height then [cols y 0.]@(rows (y +. 1.)) else [] in
+  let rec cols y x = if x < width then vdivs (samp x y 0.) samples::cols y (x +. 1.) else [] in
+  let rec rows y = if y < height then cols y 0.::rows (y +. 1.) else [] in
   writeppm (rows 0.)
  
 let _ = main ();
