@@ -155,7 +155,7 @@ $ ocamlopt -inline 9 -unsafe -ccopt -O9 -o ocamlrb ocamlrb.ml
 ```
 $ time ./ocamlrb
 
-real    5m8.223s
-user    5m5.076s
-sys     0m0.504s
+real    4m35.906s
+user    4m33.408s
+sys     0m0.488s
 ```
