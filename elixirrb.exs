@@ -6,8 +6,6 @@ defmodule Raybench do
 
   defmodule Vector, do: defstruct x: 0.0, y: 0.0, z: 0.0
 
-  @zero %Vector{}
-
   defp vadd(v1, v2), do: %Vector{x: v1.x + v2.x, y: v1.y + v2.y, z: v1.z + v2.z}
   defp vsub(v1, v2), do: %Vector{x: v1.x - v2.x, y: v1.y - v2.y, z: v1.z - v2.z}
   defp vmul(v1, v2), do: %Vector{x: v1.x * v2.x, y: v1.y * v2.y, z: v1.z * v2.z}
@@ -18,7 +16,7 @@ defmodule Raybench do
   defp vnorm(v1), do: :math.sqrt(vdot v1, v1)
   defp vunit(v1), do: vdivs v1, vnorm v1
 
-  defmodule Ray, do: defstruct origin: @zero, direction: @zero
+  defmodule Ray, do: defstruct origin: %Vector{}, direction: %Vector{}
   defp point(r, d), do: vadd r.origin, (vmuls r.direction, d)
 
   defmodule Camera  do 
@@ -28,10 +26,9 @@ defmodule Raybench do
               lb: %Vector{x: -8.0, y: 0.0, z: 50.0}
   end
 
-  defmodule Sphere, do: defstruct center: @zero, radius: 0.0, color: @zero, islight: false
+  defmodule Sphere, do: defstruct center: %Vector{}, radius: 0.0, color: %Vector{}, islight: false
 
-  defmodule Hit, do: defstruct distance: 1.0e16, point: @zero, normal: @zero, sphere: %Sphere{}
-  @nohit %Hit{}
+  defmodule Hit, do: defstruct distance: 1.0e16, point: %Vector{}, normal: %Vector{}, sphere: %Sphere{}
   
   defp sphit(sp, ry) do
     oc = vsub ry.origin, sp.center
@@ -51,11 +48,11 @@ defmodule Raybench do
           pt2 = point ry, t2
           %Hit{distance: t2, point: pt2, normal: (vsub pt2, sp.center) |> vunit, sphere: sp}
         else
-          @nohit
+          %Hit{}
         end
       end
     else
-      @nohit
+      %Hit{}
     end
   end
 
@@ -88,16 +85,16 @@ defmodule Raybench do
 
   defp trace(world, ray, depth) do
     hits = Enum.map(world.spheres, &(sphit(&1, ray)))
-    closest = Enum.reduce(hits, @nohit, &(if (&1).distance < (&2).distance do &1 else &2 end))
+    closest = Enum.reduce(hits, %Hit{}, &(if (&1).distance < (&2).distance do &1 else &2 end))
     cond do
-      closest == @nohit -> @zero
+      closest == %Hit{} -> %Vector{}
       closest.sphere.islight -> closest.sphere.color
       depth < @max_depth ->
         nray = %Ray{origin: closest.point, direction: rnddome(closest.normal)}
         ncolor = trace(world, nray, (depth + 1))
         at = vdot nray.direction, closest.normal
         vmul closest.sphere.color, (vmuls ncolor, at)
-      true -> @zero
+      true -> %Vector{}
     end
   end
 
@@ -129,7 +126,7 @@ defmodule Raybench do
         ray = %Ray{origin: world.camera.eye, direction: dir}
         vadd(trace(world, ray, 0), samp.(x, y, (s + 1), samp))
       else
-        @zero
+        %Vector{}
       end
     end
     cols = fn(y, x, cols) -> if x < @width do [vdivs(samp.(x,y,0,samp), @samples) | cols.(y, (x+1), cols)] else [] end end
