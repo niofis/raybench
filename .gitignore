@@ -37,3 +37,9 @@ lisprb
 ocamlrb
 ocamlrb.cmi
 ocamlrb.cmx
+crb
+*.ppm
+csrb.exe.mdb
+*.beam
+*.hi
+test.txt
