@@ -88,12 +88,22 @@ sys     0m14.044s
 ```
 JavaScript (jsrb.js)
 
+*node.js v5.7.1*
 ```
 $ time node jsrb.js 
 
 real    8m49.170s
 user    8m40.620s
 sys     0m4.488s
+```
+
+*node.js v6.2.1*
+```
+$ time node jsrb.js 
+
+real    7m59.041s
+user    7m50.412s
+sys     0m5.300s
 ```
 
 C# (csrb.js)
