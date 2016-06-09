@@ -1,7 +1,7 @@
 defmodule Raybench do
   @width 1280.0
   @height 720.0
-  @samples 1.0
+  @samples 50.0
   @max_depth 5
 
   defmodule Vector, do: defstruct x: 0.0, y: 0.0, z: 0.0
@@ -106,7 +106,7 @@ defmodule Raybench do
     {:ok, ppm} = File.open "elixirrb.mp.ppm", [:write, {:encoding, :utf8}]
     IO.puts(ppm, "P3\n#{@width} #{@height}\n255")
     Enum.each(data, fn row -> 
-      Enum.each(row, fn c -> IO.write(ppm, colorToStr(Task.await(c,0))) end)
+      Enum.each(Task.await(row, 100000), fn c -> IO.write(ppm, colorToStr(c)) end)
       IO.write(ppm, "\n") end)
     File.close ppm
   end
@@ -129,8 +129,8 @@ defmodule Raybench do
         %Vector{}
       end
     end
-    cols = fn(y, x, cols) -> if x < @width do [Task.async(fn -> vdivs(samp.(x,y,0,samp), @samples) end) | cols.(y, (x+1), cols)] else [] end end
-    rows = fn(y, rows) -> if y < @height do [cols.(y, 0, cols) | rows.(y + 1, rows)] else [] end end
+    cols = fn(y, x, cols) -> if x < @width do [vdivs(samp.(x,y,0,samp), @samples) | cols.(y, (x+1), cols)] else [] end end
+    rows = fn(y, rows) -> if y < @height do [Task.async(fn -> cols.(y, 0, cols) end) | rows.(y + 1, rows)] else [] end end
     writeppm(rows.(0, rows))
   end
 end
