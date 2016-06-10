@@ -1,7 +1,7 @@
 defmodule Raybench do
-  @width 1280.0
-  @height 720.0
-  @samples 50.0
+  @width 1280
+  @height 720
+  @samples 50
   @max_depth 5
 
   defmodule Vector, do: defstruct x: 0.0, y: 0.0, z: 0.0
@@ -60,9 +60,9 @@ defmodule Raybench do
     %Sphere{center: %Vector{x: 0.0, y: -10002.0, z: 0.0}, radius: 9999.0, 
             color: %Vector{x: 1.0, y: 1.0, z: 1.0}, islight: false},
     %Sphere{center: %Vector{x: -10012.0, y: 0.0, z: 0.0}, radius: 9999.0, 
-            color: %Vector{x: 0.0, y: 1.0, z: 0.0}, islight: false},
+            color: %Vector{x: 1.0, y: 0.0, z: 0.0}, islight: false},
     %Sphere{center: %Vector{x: 10012.0, y: 0.0, z: 0.0}, radius: 9999.0, 
-            color: %Vector{x: 1.0, y: 1.0, z: 1.0}, islight: false},
+            color: %Vector{x: 0.0, y: 1.0, z: 0.0}, islight: false},
     %Sphere{center: %Vector{x: 0.0, y: 0.0, z: -10012.0}, radius: 9999.0, 
             color: %Vector{x: 1.0, y: 1.0, z: 1.0}, islight: false},
     %Sphere{center: %Vector{x: 0.0, y: 10012.0, z: 0.0}, radius: 9999.0, 
@@ -115,21 +115,22 @@ defmodule Raybench do
     world = %World{}
     vdu = vdivs(vsub(world.camera.rt, world.camera.lt), @width)
     vdv = vdivs(vsub(world.camera.lb, world.camera.lt), @height)
-    samp = fn(x, y, s, samp) ->
-      if s < @samples do
-        dir = vunit(
+    pixel = fn(x, y) ->
+      dir = vunit(
         vsub(
           vadd(
             world.camera.lt,
             vadd(vmuls(vdu,(x + :random.uniform())),vmuls(vdv,(y + :random.uniform())))),
           world.camera.eye))
         ray = %Ray{origin: world.camera.eye, direction: dir}
-        vadd(trace(world, ray, 0), samp.(x, y, (s + 1), samp))
-      else
-        %Vector{}
-      end
+        trace(world, ray, 0)
     end
-    cols = fn(y, x, cols) -> if x < @width do [vdivs(samp.(x,y,0,samp), @samples) | cols.(y, (x+1), cols)] else [] end end
+    samples = fn (x,y) ->
+      Enum.map(1..@samples, fn(_) -> pixel.(x,y) end)
+      |> Enum.reduce(%Vector{}, &vadd/2)
+      |> vdivs(@samples)
+    end
+    cols = fn(y, x, cols) -> if x < @width do [samples.(x,y) | cols.(y, (x+1), cols)] else [] end end
     rows = fn(y, rows) -> if y < @height do [cols.(y, 0, cols) | rows.(y + 1, rows)] else [] end end
     writeppm(rows.(0, rows))
   end
