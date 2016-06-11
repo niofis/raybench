@@ -169,3 +169,21 @@ real    4m35.906s
 user    4m33.408s
 sys     0m0.488s
 ```
+
+Elixir
+```
+$ time elixir elixirrb.exs
+
+real    123m59.025s
+user    118m2.504s
+sys     4m16.504s
+```
+
+Elixir MP
+```
+$ time elixir elixirrb.mp.exs
+
+real    138m48.241s
+user    132m20.264s
+sys     4m54.372s
+```
