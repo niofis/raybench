@@ -271,42 +271,36 @@ class RayBench{
 
   public static void Main (String[] args) {
 
-    //Floor
     spheres[0] = (new Sphere(
           new Vector3(0, -10002, 0),
           9999,
           new Vector3(1, 1, 1),
           false));
 
-    //Left
     spheres[1] = (new Sphere(
           new Vector3(-10012, 0, 0),
           9999,
           new Vector3(1, 0, 0),
           false));
 
-    //Right
     spheres[2] = (new Sphere(
           new Vector3(10012, 0, 0),
           9999,
           new Vector3(0, 1, 0),
           false));
 
-    //Back
     spheres[3] = (new Sphere(
           new Vector3(0, 0, -10012),
           9999,
           new Vector3(1, 1, 1),
           false));
 
-    //Ceiling
     spheres[4] = (new Sphere(
           new Vector3(0, 10012, 0),
           9999,
           new Vector3(1, 1, 1),
           true));
 
-    //Other
     spheres[5] = (new Sphere(
           new Vector3(-5, 0, 2),
           2,

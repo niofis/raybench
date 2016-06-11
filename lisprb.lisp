@@ -158,9 +158,4 @@
                     (v-div-s color SAMPLES))))))
     (writeppm data)))
 
-;(require :sb-sprof)
-;(sb-sprof:start-profiling)    
 (main)
-;(sb-sprof:stop-profiling)
-;(sb-sprof:report)
-

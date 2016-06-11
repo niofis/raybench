@@ -137,42 +137,37 @@ class World:
   def __init__(self):
     self.camera = Camera()
     self.spheres = []
-    #Floor
+
     self.spheres.append(Sphere(
         Vector3(0, -10002.0, 0),
         9999.0,
         Vector3(1.0, 1.0, 1.0),
         False));
 
-    #Left
     self.spheres.append(Sphere(
         Vector3(-10012.0, 0, 0),
         9999.0,
         Vector3(1.0, 0, 0),
         False));
 
-    #Right
     self.spheres.append(Sphere(
         Vector3(10012.0, 0, 0),
         9999.0,
         Vector3(0, 1.0, 0),
         False));
 
-    #Back
     self.spheres.append(Sphere(
         Vector3(0, 0, -10012.0),
         9999.0,
         Vector3(1.0, 1.0, 1.0),
         False));
 
-    #Ceiling
     self.spheres.append(Sphere(
         Vector3(0, 10012.0, 0),
         9999.0,
         Vector3(1.0, 1.0, 1.0),
         True));
 
-    #Other
     self.spheres.append(Sphere(
         Vector3(-5.0, 0, 2.0),
         2.0,

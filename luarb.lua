@@ -221,38 +221,32 @@ function World.new (ops)
   s.camera = Camera.new()
   s.spheres = {}
 
-  --Floor
   s.spheres[0] = Sphere.new{
     center = Vector3.new(0, -10002, 0),
     radius = 9999,
     color = Vector3.new(1,1,1)
   }
-  --Left
   s.spheres[1] = Sphere.new{
     center = Vector3.new(-10012, 0, 0),
     radius = 9999, 
     color = Vector3.new(1,0,0)
   }
-  --Right
   s.spheres[2] = Sphere.new{
     center = Vector3.new(10012, 0, 0),
     radius = 9999,
     color = Vector3.new(0,1,0)
   }
-  --Back
   s.spheres[3] = Sphere.new{
     center = Vector3.new(0, 0, -10020), 
     radius = 9999,
     color = Vector3.new(1,1,1)
   }
-  --Ceiling
   s.spheres[4] = Sphere.new{
     center = Vector3.new(0, 10012, 0),
     radius = 9999,
     color = Vector3.new(1,1,1),
     is_light = true
   }
-  --Others
   s.spheres[5] = Sphere.new{
     center = Vector3.new(-5, 0, 2),
     radius = 2,

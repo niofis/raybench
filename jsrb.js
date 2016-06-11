@@ -154,42 +154,37 @@ class World {
   constructor() {
     this.camera = new Camera();
     this.spheres = [];
-    //Floor
+
     this.spheres.push(new Sphere(
       new Vector3(0, -10002, 0),
       9999,
       new Vector3(1, 1, 1),
       false));
 
-    //Left
     this.spheres.push(new Sphere(
       new Vector3(-10012, 0, 0),
       9999,
       new Vector3(1, 0, 0),
       false));
 
-    //Right
     this.spheres.push(new Sphere(
       new Vector3(10012, 0, 0),
       9999,
       new Vector3(0, 1, 0),
       false));
 
-    //Back
     this.spheres.push(new Sphere(
       new Vector3(0, 0, -10012),
       9999,
       new Vector3(1, 1, 1),
       false));
 
-    //Ceiling
     this.spheres.push(new Sphere(
       new Vector3(0, 10012, 0),
       9999,
       new Vector3(1, 1, 1),
       true));
 
-    //Other
     this.spheres.push(new Sphere(
       new Vector3(-5, 0, 2),
       2,

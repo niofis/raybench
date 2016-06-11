@@ -136,20 +136,13 @@ struct world world_new()
   world.spheres_count = 8;
   world.spheres = (struct sphere*) malloc(sizeof(struct sphere) * world.spheres_count);
 
-  //floor
   world.spheres[0] = sphere_new(v3_new(0.0f, -10002.0f, 0.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
-  //Left
   world.spheres[1] = sphere_new(v3_new(-10012.0f, 0.0f, 0.0f), 9999.f, v3_new(1.0f,0.0f,0.0f));
-  //Right
   world.spheres[2] = sphere_new(v3_new(10012.0f, 0.0f, 0.0f), 9999.f, v3_new(0.0f,1.0f,0.0f));
-  //Back
   world.spheres[3] = sphere_new(v3_new(0.0f, 0.0f, -10012.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
-  //Ceiling
   world.spheres[4] = sphere_new(v3_new(0.0f, 10012.0f, 0.0f), 9999.f, v3_new(1.0f,1.0f,1.0f));
-  //Light
   world.spheres[4].is_light = true;
 
-  //Others
   world.spheres[5] = sphere_new(v3_new(-5.0f, 0.0f, 2.0f), 2.0f, v3_new(1.0f,1.0f,0.0f));
   world.spheres[6] = sphere_new(v3_new(0.0f, 5.0f, -1.0f), 4.0f,v3_new(1.0f,0.0f,0.0f));
   world.spheres[7] = sphere_new(v3_new(8.0f, 5.0f, -1.0f), 2.0f,v3_new(0.0f,0.0f,1.0f));
@@ -230,9 +223,6 @@ float randf()
     return (float)rand() / (float)RAND_MAX ;
 }
 
-//Creates a random unit vector on the top half dome
-//of a unit sphere around the 'normal' vector passed
-//as parameter
 struct v3 rnd_dome(const struct v3* normal)
 {
   struct v3 p;
@@ -275,7 +265,6 @@ struct v3 trace(struct world* world, struct ray* ray, uint_fast16_t depth)
   {
     if(sp->is_light == false)
     {
-      //The object is not a light, keep going
       struct ray nray;
       nray.origin = hit.point;
       nray.direction = rnd_dome(&hit.normal);
@@ -287,7 +276,6 @@ struct v3 trace(struct world* world, struct ray* ray, uint_fast16_t depth)
     }
     else
     {
-      //The object is a light no need to keep bouncing
       color = sp->color;
     }
   }

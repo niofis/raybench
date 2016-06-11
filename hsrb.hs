@@ -44,7 +44,6 @@ world = World {
       ]}
 
 
---data Car = Car {company :: String, model :: String, year :: Int} deriving (Show) 
 data Vector3 = Vector3 {vx::Float, vy::Float, vz::Float} deriving (Show)
 vadd (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = Vector3 (x1+x2) (y1+y2) (z1+z2)
 vsub (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = Vector3 (x1-x2) (y1-y2) (z1-z2)
