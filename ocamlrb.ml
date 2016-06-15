@@ -103,8 +103,8 @@ let main () =
   let world = world in
   let vdu = vdivs (vsub world.camera.rt world.camera.lt) width in
   let vdv = vdivs (vsub world.camera.lb world.camera.lt) height in
-  let rec samp x y s = 
-    if s < samples then
+  let rec samp x y s acc = match s with
+    | s when s < samples ->
       let dir = (vunit (vsub 
           (vadd world.camera.lt 
             (vadd 
@@ -112,12 +112,11 @@ let main () =
               (vmuls vdv (y +. Random.float(1.)))))
           world.camera.eye)) in
       let ray = {origin=world.camera.eye; direction = dir} in
-      (vadd (trace world ray 0) (samp x y (s +. 1.)))
-      else
-        zero
-  in
-  let rec cols y x = if x < width then vdivs (samp x y 0.) samples::cols y (x +. 1.) else [] in
-  let rec rows y = if y < height then cols y 0.::rows (y +. 1.) else [] in
-  writeppm (rows 0.)
+      let col = vadd acc (trace world ray 0) in 
+        samp x y (s +. 1.) col
+    | _ -> acc in
+  let rec cols y x acc = if x < width then cols y (x +. 1.) (vdivs (samp x y 0. zero) samples::acc) else acc in
+  let rec rows y acc = if y < height then rows (y +. 1.) (cols y 0. []:: acc) else acc in
+  writeppm (rows 0. [])
  
 let _ = main ();
