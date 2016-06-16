@@ -116,7 +116,7 @@ let main () =
         samp x y (s +. 1.) col
     | _ -> acc in
   let rec cols y x acc = if x < width then cols y (x +. 1.) (vdivs (samp x y 0. zero) samples::acc) else acc in
-  let rec rows y acc = if y < height then rows (y +. 1.) (cols y 0. []:: acc) else acc in
-  writeppm (rows 0. [])
+  let rec rows y acc = if y < height then rows (y +. 1.) (List.rev (cols y 0. []) :: acc) else acc in
+  writeppm (List.rev (rows 0. []))
  
 let _ = main ();
