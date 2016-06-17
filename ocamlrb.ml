@@ -77,18 +77,14 @@ let rec trace world ray depth =
   let hittest sp = sphit sp ray in
   let hits = List.map hittest world.spheres in
   let compare_hits h1 h2 = if h1.distance < h2.distance then h1 else h2 in
-  let closest = List.fold_left compare_hits nohit hits in
-  if closest = nohit then
-    zero
-  else if closest.sphere.islight then
-    closest.sphere.color
-  else if depth < max_depth then
+  match (List.fold_left compare_hits nohit hits), depth with
+  | closest, depth when closest = nohit || depth >= max_depth-> zero
+  | closest, _ when closest.sphere.islight -> closest.sphere.color
+  | closest, _ -> 
       let nray = {origin=closest.point; direction = rnddome closest.normal} in
       let ncolor = trace world nray (depth + 1) in
       let at = dot nray.direction closest.normal in
       vmul closest.sphere.color (vmuls ncolor at)
-  else
-    zero
 
 let to255 v = truncate (v *. 255.99)
 let colorToStr ppm color = Printf.fprintf ppm "%i %i %i " (to255 color.x) (to255 color.y) (to255 color.z)
