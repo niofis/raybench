@@ -292,7 +292,7 @@ struct v3 trace(struct world* world, struct ray* ray, uint_fast16_t depth)
 
 void writeppm(struct v3 *data)
 {
-  FILE *ppm = fopen("crb.ppm","w+");
+  FILE *ppm = fopen("crb.omp.ppm","w+");
   fprintf(ppm,"P3\n%u %u\n255\n", WIDTH, HEIGHT);
 
   for(uint_fast16_t y = 0; y < HEIGHT; ++y)
