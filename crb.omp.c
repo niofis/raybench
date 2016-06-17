@@ -330,43 +330,43 @@ int main (int argc, char** argv)
   v3_sub(&vdv, &world.camera.lb, &world.camera.lt);
   v3_divs(&vdv, &vdv, (float) HEIGHT);
 #pragma omp parallel
-    {
-#pragma omp for 
-  for(uint_fast16_t y = 0; y < HEIGHT; ++y)
   {
-    for(uint_fast16_t x = 0; x < WIDTH; ++x)
+#pragma omp for 
+    for(uint_fast16_t y = 0; y < HEIGHT; ++y)
     {
-
-      struct ray r;
-      r.origin = world.camera.eye;
-      
-      struct v3 u;
-      struct v3 v;
-      struct v3 c = {0};
-
-      for(uint_fast16_t s = 0; s < SAMPLES; ++s)
+      for(uint_fast16_t x = 0; x < WIDTH; ++x)
       {
-        r.direction = world.camera.lt;
-        
-        v3_muls(&u, &vdu, (float)x + randf());
-        v3_muls(&v, &vdv, (float)y + randf());
 
-        v3_add(&r.direction, &r.direction, &u);
-        v3_add(&r.direction, &r.direction, &v);
+        struct ray r;
+        r.origin = world.camera.eye;
 
-        v3_sub(&r.direction, &r.direction, &r.origin);
+        struct v3 u;
+        struct v3 v;
+        struct v3 c = {0};
 
-        v3_mkunit(&r.direction, &r.direction);
-        u = trace(&world, &r, 0);
-        v3_add(&c, &c, &u);
+        for(uint_fast16_t s = 0; s < SAMPLES; ++s)
+        {
+          r.direction = world.camera.lt;
+
+          v3_muls(&u, &vdu, (float)x + randf());
+          v3_muls(&v, &vdv, (float)y + randf());
+
+          v3_add(&r.direction, &r.direction, &u);
+          v3_add(&r.direction, &r.direction, &v);
+
+          v3_sub(&r.direction, &r.direction, &r.origin);
+
+          v3_mkunit(&r.direction, &r.direction);
+          u = trace(&world, &r, 0);
+          v3_add(&c, &c, &u);
+        }
+
+        v3_divs(&c, &c, (float)SAMPLES);
+
+        data[y * WIDTH + x] = c;
       }
-
-      v3_divs(&c, &c, (float)SAMPLES);
-
-      data[y * WIDTH + x] = c;
     }
   }
-    }
 
   writeppm(data);
 
