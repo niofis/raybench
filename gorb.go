@@ -8,8 +8,8 @@ import (
 )
 
 const (
-  Width = 1280
-  Height = 720
+  Width = 128
+  Height = 72
   Samples = 50
   MaxDepth = 5
 )
@@ -60,9 +60,7 @@ type ray struct {
 }
 
 func ray_point (r ray, d float32) v3 {
-  return v3{x: r.origin.x + r.direction.x * d,
-            y: r.origin.y + r.direction.y * d,
-            z: r.origin.z + r.direction.z * d}
+  return v3_add(r.origin, v3_muls(r.direction, d))
 }
 
 type camera struct {
@@ -107,7 +105,7 @@ func world_new () world {
   w.spheres[3] = sphere{center: v3{x: 0, y: 0, z: -10012},
     radius: 9999, color: v3{x: 1, y: 1, z: 1}, is_light: false}
 
-  w.spheres[4] = sphere{center: v3{x: 0, y: 10002, z: 0},
+  w.spheres[4] = sphere{center: v3{x: 0, y: 10012, z: 0},
     radius: 9999, color: v3{x: 1, y: 1, z: 1}, is_light: true}
 
   w.spheres[5] = sphere{center: v3{x: -5, y: 0, z: 2},
@@ -164,8 +162,10 @@ func sphit (sp sphere, ray ray) hit {
 
 func rnd_dome (normal v3) v3 {
 
-  var d float32 = -1
+  var d float32
   var p v3
+
+  d = -1
 
   for d < 0 {
     p = v3_unit(v3{x: 2 * rand.Float32() - 1,
@@ -178,14 +178,14 @@ func rnd_dome (normal v3) v3 {
   return p;
 }
 
-func trace (world world, ray ray, depth int) v3 {
+func trace (w world, r ray, depth int) v3 {
   did_hit := false
   hit := nohit
   color := zero
   var sp sphere
 
-  for i, s := range world.spheres {
-    lh := sphit(s, ray)
+  for _, s := range w.spheres {
+    lh := sphit(s, r)
 
     if (lh.distance < hit.distance) {
       sp = s
@@ -196,11 +196,10 @@ func trace (world world, ray ray, depth int) v3 {
   }
 
   if did_hit && depth < MaxDepth {
-    if sp.is_light != true {
+    if sp.is_light == false {
       nray := ray{origin: hit.point, direction: rnd_dome(hit.normal)}
-      ncolor := trace(world, nray, depth +1)
+      ncolor := trace(w, nray, depth + 1)
       at := v3_dot(nray.direction, hit.normal)
-
       color = v3_mul(color, v3_muls(ncolor,at))
     }
   }
@@ -218,8 +217,8 @@ func writeppm (data [][]v3) {
 
   ppm.WriteString(fmt.Sprintf("P3\n%d %d\n255\n", Width, Height))
 
-  for i, row := range data {
-    for j, c := range row {
+  for _, row := range data {
+    for _, c := range row {
       r := int(math.Floor(float64(c.x * 255.99)))
       g := int(math.Floor(float64(c.y * 255.99)))
       b := int(math.Floor(float64(c.z * 255.99)))
@@ -253,13 +252,14 @@ func main() {
           v3_sub(
             v3_add(
               world.camera.lt,
-              v3_add(v3_muls(vdu, x + rand.Float32()),
-                     v3_muls(vdv, y + rand.Float32())))))
+              v3_add(v3_muls(vdu, float32(x) + rand.Float32()),
+                     v3_muls(vdv, float32(y) + rand.Float32()))),
+            world.camera.eye))
         color = v3_add(color, trace(world, ray, 0))
       }
 
       color = v3_divs(color, Samples)
-      data[y][x]
+      data[y][x] = color
     }
   }
 
