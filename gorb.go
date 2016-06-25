@@ -8,8 +8,8 @@ import (
 )
 
 const (
-  Width = 128
-  Height = 72
+  Width = 1280
+  Height = 720
   Samples = 50
   MaxDepth = 5
 )
@@ -133,8 +133,8 @@ func sphit (sp sphere, ray ray) hit {
   oc := v3_sub(ray.origin, sp.center)
   a := v3_dot(ray.direction, ray.direction)
   b := v3_dot(oc, ray.direction)
-  c := v3_dot(oc, oc) - sp.radius * sp.radius
-  dis := b*b - a*c
+  c := v3_dot(oc, oc) - (sp.radius * sp.radius)
+  dis := (b*b) - (a*c)
 
   if dis > 0 {
     e := float32(math.Sqrt(float64(dis)))
@@ -143,7 +143,7 @@ func sphit (sp sphere, ray ray) hit {
     if t > 0.007 {
       pt := ray_point(ray, t)
       n := v3_unit(v3_sub(pt, sp.center))
-      return hit{distance: t, normal: n}
+      return hit{distance: t, normal: n, point:pt}
     }
 
     t = (-b + e) / a
@@ -151,7 +151,7 @@ func sphit (sp sphere, ray ray) hit {
     if t > 0.007 {
       pt := ray_point(ray, t)
       n := v3_unit(v3_sub(pt, sp.center))
-      return hit{distance: t, normal: n}
+      return hit{distance: t, normal: n, point:pt}
     }
 
     return nohit
@@ -219,6 +219,7 @@ func writeppm (data [][]v3) {
 
   for _, row := range data {
     for _, c := range row {
+      //fmt.Printf("%#v\n", c)
       r := int(math.Floor(float64(c.x * 255.99)))
       g := int(math.Floor(float64(c.y * 255.99)))
       b := int(math.Floor(float64(c.z * 255.99)))
@@ -264,5 +265,4 @@ func main() {
   }
 
   writeppm(data)
-
 }
