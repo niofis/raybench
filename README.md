@@ -187,3 +187,12 @@ real    138m48.241s
 user    132m20.264s
 sys     4m54.372s
 ```
+
+Go (version 1.6)
+```
+$ time ./gorb
+
+real    6m44.151s
+user    6m35.732s
+sys     0m4.144s
+```
