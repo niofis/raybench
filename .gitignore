@@ -43,3 +43,4 @@ csrb.exe.mdb
 *.beam
 *.hi
 test.txt
+nimcache
