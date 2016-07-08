@@ -1,5 +1,6 @@
 import strutils
 import math
+import random
 
 const 
   WIDTH = 1280
