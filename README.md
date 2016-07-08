@@ -196,3 +196,15 @@ real    6m44.151s
 user    6m35.732s
 sys     0m4.144s
 ```
+
+Nim (version 0.14.2)
+```
+$ nim c --boundChecks:off --floatChecks:off --opt:speed -d:release nimrb.nim
+```
+```
+$ time ./nimrb
+
+real    1m53.320s
+user    1m52.236s
+sys     0m0.144s
+```
