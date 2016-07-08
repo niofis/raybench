@@ -7,12 +7,6 @@ const
   SAMPLES = 50
   MAXDEPTH = 5
 
-#type
-#  V3* = ref object of RootObj
-#    x*: float32
-#    y*: float32
-#    z*: float32
-
 type V3 = tuple[x: float32, y: float32, z: float32]
 let zero = (0'f32, 0'f32, 0'f32)
 
@@ -175,11 +169,8 @@ proc main() =
         color = color + trace(world, ray, 0)
 
       color = color / float32(SAMPLES)
-      
       row.add(color)
     data.add(row)
-      
   writeppm(data)
 
 main()
-#echo rnd_dome((1'f32, 0'f32, 0'f32))
