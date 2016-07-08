@@ -1,5 +1,5 @@
 #gcc -Ofast -std=c11 -lm -o crb crb.c -D_XOPEN_SOURCE=600 -march=native -fomit-frame-pointer
-all: crb crb.omp ocamlrb hsrb gorb
+all: crb crb.omp ocamlrb hsrb gorb nimrb
 
 .PHONY: crb
 crb:
@@ -20,3 +20,7 @@ hsrb:
 .PHONY: gorb
 gorb:
 	go build gorb.go
+
+.PHONY: nimrb
+nimrb:
+	nim c --boundChecks:off --floatChecks:off --opt:speed -d:release nimrb.nim

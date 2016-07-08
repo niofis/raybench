@@ -14,6 +14,7 @@ const
 #    z*: float32
 
 type V3 = tuple[x: float32, y: float32, z: float32]
+let zero = (0'f32, 0'f32, 0'f32)
 
 proc `+`*(a, b: V3): V3 = (x: a.x + b.x, y: a.y + b.y, z: a.z + b.z)
 proc `*`*(a, b: V3): V3 = (x: a.x * b.x, y: a.y * b.y, z: a.z * b.z)
@@ -64,36 +65,121 @@ proc world_new(): World =
   world.spheres.add((center: (0'f32, 5'f32, -1'f32), radius: 4'f32,
                       color: (1'f32, 0'f32, 0'f32), is_light: false))
 
-  world.spheres.add((center: (8'f32, 5'f32, -1'f32), radius: 9999'f32,
+  world.spheres.add((center: (8'f32, 5'f32, -1'f32), radius: 2'f32,
                       color: (0'f32, 0'f32, 1'f32), is_light: false))
   return world
 
 type Hit = tuple[distance: float32, point: V3, normal: V3]
 
-let nohit = (distance: 1e16)
+let nohit = (distance: 1e16'f32, point: zero, normal: zero)
 
 proc sphit(sp: Sphere, ray: Ray): Hit =
   let oc = ray.origin - sp.center
   let a = dot(ray.direction, ray.direction)
   let b = oc.dot(ray.direction)
-  let c = dot(oc, oc)
+  let c = dot(oc, oc) - sp.radius * sp.radius
   let dis = b*b - a*c
 
   if dis > 0:
     var e = sqrt(dis)
-    var t = (-b - e) / a
+    var t:float32 = (-b - e) / a
 
-proc writeppm() =
+    if t > 0.007'f32:
+      let pt = ray.point(t)
+      let n = (pt - sp.center).unit
+      return (distance: t, point: pt, normal: n)
+
+    t = (-b + e) / a
+
+    if t > 0.007'f32:
+      let pt = ray.point(t)
+      let n = (pt - sp.center).unit
+      return (distance: t, point: pt, normal: n)
+
+    return nohit
+  
+  return nohit
+
+proc rnd2(): float32 = float32(2'f32 * random(1'f32)) - 1'f32
+
+proc rnd_dome(normal: V3): V3 =
+  var d:float32
+  var p:V3
+
+  d = -1'f32
+
+  while d < 0:
+    p = ((rnd2(), rnd2(), rnd2())).unit
+    d = p.dot(normal)
+  return p
+
+proc trace(w: World, r: Ray, depth: int): V3 =
+  var did_hit = false
+  var hit = nohit
+  var color = zero
+  var sp:Sphere
+
+  for s in w.spheres:
+    let lh = s.sphit(r)
+    
+    if lh.distance < hit.distance:
+      sp = s
+      did_hit = true
+      color = s.color
+      hit = lh
+
+  if did_hit == true and depth < MAXDEPTH:
+    if sp.is_light == false:
+      let nray = (origin: hit.point, direction: rnd_dome(hit.normal))
+      let ncolor = trace(w, nray, depth + 1)
+      let at = nray.direction.dot(hit.normal)
+      color = color * (ncolor * at)
+
+  if did_hit == false or depth >= MAXDEPTH:
+    color = zero
+
+  return color
+
+proc writeppm(data: seq[seq[V3]]) =
   let ppm = open("nimrb.ppm", fmWrite)
   ppm.write(format("P3\n$# $#\n255\n",WIDTH, HEIGHT))
+  for row in data:
+    for c in row:
+      ppm.write(format("$# $# $# ",
+        int(floor(c.x * 255.99'f32)),
+        int(floor(c.y * 255.99'f32)),
+        int(floor(c.z * 255.99'f32))))
+    ppm.write("\n")
   ppm.close()
 
 proc main() =
+  var data = newSeq[seq[V3]]()
   let world = world_new()
-  writeppm()
+  let vdu = (world.camera.rt - world.camera.lt) / float32(WIDTH)
+  let vdv = (world.camera.lb - world.camera.lt) / float32(HEIGHT)
 
+  randomize()
+  
+  for y in 0..(HEIGHT-1):
+    var row = newSeq[V3]()
+    for x in 0..(WIDTH-1):
+      var color = zero
+      var ray:Ray
+
+      ray.origin = world.camera.eye
+
+      for i in 1..SAMPLES:
+        ray.direction = ((world.camera.lt + (vdu * (float32(x) + float32(random(1'f32))) +
+                        vdv * (float32(y) + float32(random(1'f32))))) -
+                        world.camera.eye).unit
+        color = color + trace(world, ray, 0)
+
+      color = color / float32(SAMPLES)
+      
+      row.add(color)
+    data.add(row)
+      
+  writeppm(data)
 
 main()
-var v1 = (x:1'f32, y:2'f32, z:3'f32)
-var v2 = (x:1'f32, y:1'f32, z:1'f32)
-echo v1.unit
+#echo rnd_dome((1'f32, 0'f32, 0'f32))
