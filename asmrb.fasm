@@ -1,0 +1,102 @@
+format ELF64
+public main
+
+WIDTH = 1280
+HEIGHT = 720
+MAX_DEPTH = 5
+SAMLPLES = 50
+
+section '.text' executable
+extrn fopen
+extrn fprintf 
+extrn fclose
+
+writeppm:
+
+  lea rsi, [filemode]
+  lea rdi, [filename]
+  call fopen
+  mov qword [ppm], rax
+
+  mov ecx, HEIGHT
+  mov edx, WIDTH
+  lea esi, [header]
+  mov rdi, qword [ppm]
+  mov eax, 0
+  call fprintf
+
+  mov r8d, 123
+  mov ecx, 254
+  mov edx, 255
+  lea esi, [pixel]
+  mov rdi, qword [ppm]
+  mov eax, 0
+  call fprintf
+
+  mov rdi, qword [ppm]
+  call fclose
+  ret
+
+main:
+  call writeppm
+
+  xor edi, edi
+  mov eax, 60
+  syscall
+
+section '.data' writeable
+
+struc Vector x, y, z
+{
+  .x dd 0
+  .y dd 0
+  .z dd 0
+  common
+  .size = $ - .x
+}
+
+struc Camera eye, lt, rt, lb
+{
+  .eye Vector 0.0, 4.5, 75.0
+  .lt Vector -8.0, 9.0, 50.0
+  .rt Vector 8.0, 9.0, 50.0
+  .lb Vector -8.0, 0.0, 50.0
+  common
+  .size = $ - .eye
+}
+
+struc Ray origin, direction
+{
+  .origin Vector
+  .direction Vector
+}
+
+struc Sphere center, color, radius, is_light
+{
+  .center Vector
+  .color Vector
+  .radius dd 0.0
+  .is_light dd 0
+}
+
+struc Hit dist, point, normal
+{
+  .dist dd 0.0
+  .point Vector
+  .normal Vector
+}
+
+struc World
+{
+  spheres_count dd 0
+  spheres dd 0
+  camera Camera
+}
+
+world World
+
+ppm rq 1
+filename db 'asmrb.ppm',0
+filemode db 'w+',0
+header db 'P3',0Ah,'%u %u',0Ah,'255',0Ah,0
+pixel db '%u %u %u ',0
