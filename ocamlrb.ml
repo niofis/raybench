@@ -73,11 +73,15 @@ let rec rnddome normal =
   let d = dot pt normal in
     if d < 0. then rnddome normal else pt
 
+let rec find_closest ray hit spheres = match spheres with
+  | [] -> hit
+  | sp::rest -> 
+      let nh = sphit sp ray in 
+      let closest = if nh.distance < hit.distance then nh else hit in
+      find_closest ray closest rest 
+
 let rec trace world ray depth =
-  let hittest sp = sphit sp ray in
-  let hits = List.map hittest world.spheres in
-  let compare_hits h1 h2 = if h1.distance < h2.distance then h1 else h2 in
-  match (List.fold_left compare_hits nohit hits), depth with
+  match find_closest ray nohit world.spheres, depth with
   | closest, depth when closest = nohit || depth >= max_depth-> zero
   | closest, _ when closest.sphere.islight -> closest.sphere.color
   | closest, _ -> 
