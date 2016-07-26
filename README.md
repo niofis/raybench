@@ -71,6 +71,21 @@ real    1m59.116s
 user    1m58.216s
 sys     0m0.112s
 ```
+
+C Double Precision (crb-dbl.c)
+
+```
+$ gcc crb-dbl.c -o crb-dbl -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
+```
+
+```
+$ time ./crb-dbl 
+
+real	2m26.546s
+user	2m25.856s
+sys	  0m0.104s
+```
+
 Lua (luarb.lua)
 ```
 $ time lua luarb.lua 
