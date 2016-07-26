@@ -1,9 +1,13 @@
 #gcc -Ofast -std=c11 -lm -o crb crb.c -D_XOPEN_SOURCE=600 -march=native -fomit-frame-pointer
-all: crb crb.omp ocamlrb hsrb gorb nimrb asmrb
+all: crb crb.dbl crb.omp ocamlrb hsrb gorb nimrb nimrb_f64 asmrb
 
 .PHONY: crb
 crb:
 	gcc crb.c -o crb -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
+
+.PHONY: crb.dbl
+crb.dbl:
+	gcc crb.dbl.c -o crb.dbl -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
 
 .PHONY: crb.omp
 crb.omp:
@@ -24,6 +28,11 @@ gorb:
 .PHONY: nimrb
 nimrb:
 	nim c --boundChecks:off --floatChecks:off --opt:speed -d:release nimrb.nim
+
+.PHONY: nimrb_f64
+nimrb_f64:
+	nim c --boundChecks:off --floatChecks:off --opt:speed -d:release nimrb_f64.nim
+
 
 .PHONY: asmrb
 asmrb:
