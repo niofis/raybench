@@ -136,7 +136,7 @@ proc trace(w: World, r: Ray, depth: int): V3 =
   return color
 
 proc writeppm(data: seq[seq[V3]]) =
-  let ppm = open("nimrb-dbl.ppm", fmWrite)
+  let ppm = open("nimrb_dbl.ppm", fmWrite)
   ppm.write(format("P3\n$# $#\n255\n",WIDTH, HEIGHT))
   for row in data:
     for c in row:
