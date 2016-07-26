@@ -178,11 +178,11 @@ $ ocamlopt -inline 9 -unsafe -ccopt -O9 -o ocamlrb ocamlrb.ml
 ```
 
 ```
-$ time ./ocamlrb
+$ time ./ocamlrb 
 
-real    4m25.071s
-user    4m22.932s
-sys     0m0.420s
+real	3m59.597s
+user	3m58.036s
+sys	  0m0.432s
 ```
 
 Elixir
