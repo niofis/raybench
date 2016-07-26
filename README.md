@@ -223,3 +223,15 @@ real    1m53.320s
 user    1m52.236s
 sys     0m0.144s
 ```
+
+Nim Double Precision (version 0.14.2)
+```
+$ nim c --boundChecks:off --floatChecks:off --opt:speed -d:release nimrb_dbl.nim
+```
+```
+$ time ./nimrb_dbl 
+
+real	3m19.547s
+user	3m18.432s
+sys	  0m0.268s
+```
