@@ -103,7 +103,7 @@ defmodule Raybench do
   defp colorToStr(color), do: "#{to255(color.x)} #{to255(color.y)} #{to255(color.z)} "
 
   defp writeppm(data) do
-    {:ok, ppm} = File.open "elixirrb.mp.ppm", [:write, {:encoding, :utf8}]
+    {:ok, ppm} = File.open "elixirrb-mp.ppm", [:write, {:encoding, :utf8}]
     IO.puts(ppm, "P3\n#{@width} #{@height}\n255")
     Enum.each(data, fn row -> 
       Enum.each(Task.await(row,1000*60*1000), fn c -> IO.write(ppm, colorToStr(c)) end)
