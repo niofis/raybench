@@ -2,6 +2,8 @@
 
 A simple implementation of a path tracer in different programming languages with some restrictions.
 
+Checkout my [blog posts](http://eccentricdevelopments.com/programming-language-comparison-summary/) about the development of this project.
+
 ## Restrictions
 **Code should be simple,** as in, easy to read and understand.
 
