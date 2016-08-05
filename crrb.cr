@@ -1,7 +1,7 @@
-WIDTH = 1280
-HEIGHT = 720
-SAMPLES = 50
-MAX_DEPTH = 5
+$WIDTH = 1280
+$HEIGHT = 720
+$SAMPLES = 50
+$MAXDEPTH = 5
 
 class V3
   getter x, y, z
@@ -42,10 +42,11 @@ class V3
   end
 end
 
-zero = V3.new 0_f32, 0_f32, 0_f32
+$zero = V3.new 0_f32, 0_f32, 0_f32
 
 class Ray
   getter origin, direction
+  setter origin, direction
 
   def initialize(@origin : V3, @direction : V3)
   end
@@ -65,7 +66,7 @@ end
 class Sphere
   getter center, radius, color, is_light
 
-  def initialize(@center : V3, @radius : Float32, @color : V3, is_light : Bool)
+  def initialize(@center : V3, @radius : Float32, @color : V3, @is_light : Bool)
   end
 
   def hit(ray : Ray)
@@ -89,40 +90,43 @@ class Sphere
 
       if t > 0.007_f32
         pt = ray.point t
-        n (pt - center).unit
+        n = (pt - center).unit
         return Hit.new distance: t, point: pt, normal: n
       end
       
-      return nohit
+      return $nohit
     end
 
-    return nohit
+    return $nohit
+  end
 end
 
 class World
+  @camera : Camera
+  @spheres : Array(Sphere)
   getter camera, spheres
 
   def initialize
-    camera = Camera.new eye: V3.new(0_f32, 4.5_f32, 75_f32),
+    @camera = Camera.new eye: V3.new(0_f32, 4.5_f32, 75_f32),
                         lt: V3.new(-8_f32, 9_f32, 50_f32),
                         rt: V3.new(8_f32, 9_f32, 50_f32),
                         lb: V3.new(-8_f32, 0_f32, 50_f32)
-    spheres = [] of Sphere
-    spheres << Sphere.new center: V3.new(0_f32, -10002_f32, 0_f32), radius: 9999_f32,
-                          color: V3.new(1_f32, 0_f32, 1_f32), is_light: false
-    spheres << Sphere.new center: V3.new(-10012_f32, 0_f32, 0_f32), radius: 9999_f32,
+    @spheres = [] of Sphere
+    @spheres << Sphere.new center: V3.new(0_f32, -10002_f32, 0_f32), radius: 9999_f32,
+                          color: V3.new(1_f32,1_f32, 1_f32), is_light: false
+    @spheres << Sphere.new center: V3.new(-10012_f32, 0_f32, 0_f32), radius: 9999_f32,
                           color: V3.new(1_f32, 0_f32, 0_f32), is_light: false
-    spheres << Sphere.new center: V3.new(10012_f32, 0_f32, 0_f32), radius: 9999_f32,
+    @spheres << Sphere.new center: V3.new(10012_f32, 0_f32, 0_f32), radius: 9999_f32,
                           color: V3.new(0_f32, 1_f32, 0_f32), is_light: false
-    spheres << Sphere.new center: V3.new(0_f32, 0_f32, -10012_f32), radius: 9999_f32,
+    @spheres << Sphere.new center: V3.new(0_f32, 0_f32, -10012_f32), radius: 9999_f32,
                           color: V3.new(1_f32, 1_f32, 1_f32), is_light: false
-    spheres << Sphere.new center: V3.new(0_f32, 10002_f32, 0_f32), radius: 9999_f32,
+    @spheres << Sphere.new center: V3.new(0_f32, 10012_f32, 0_f32), radius: 9999_f32,
                           color: V3.new(1_f32, 1_f32, 1_f32), is_light: true
-    spheres << Sphere.new center: V3.new(-5_f32, 0_f32, 2_f32), radius: 2_f32,
+    @spheres << Sphere.new center: V3.new(-5_f32, 0_f32, 2_f32), radius: 2_f32,
                           color: V3.new(1_f32, 1_f32, 0_f32), is_light: false
-    spheres << Sphere.new center: V3.new(0_f32, 5_f32, -1_f32), radius: 4_f32,
+    @spheres << Sphere.new center: V3.new(0_f32, 5_f32, -1_f32), radius: 4_f32,
                           color: V3.new(1_f32, 0_f32, 0_f32), is_light: false
-    spheres << Sphere.new center: V3.new(8_f32, 5_f32, -1_f32), radius: 2_f32,
+    @spheres << Sphere.new center: V3.new(8_f32, 5_f32, -1_f32), radius: 2_f32,
                           color: V3.new(0_f32, 0_f32, 1_f32), is_light: false
   end
 end
@@ -134,15 +138,16 @@ class Hit
   end
 end
 
-nohit = Hit.new 1e16_f32, zero, zero
+$nohit = Hit.new 1e16_f32, $zero, $zero
 
-def rnd2
-  (2_f32 + rand) - 1_f32
+def rnd2()
+  (2_f32 * rand).to_f32 - 1_f32
 end
 
 def rnd_dome(normal : V3)
-  p = zero
+  p = $zero
   d = -1_f32
+  
   while d < 0
     p = V3.new(rnd2, rnd2, rnd2).unit
     d = p.dot normal
@@ -151,18 +156,82 @@ def rnd_dome(normal : V3)
   return p
 end
 
+def trace(w : World, r : Ray, depth : Int32)
+  did_hit = false
+  hit = $nohit
+  color = $zero
+  sp = Sphere.new $zero, 0_f32, $zero, false
+
+  w.spheres.each do |s|
+    lh = s.hit r
+    
+    if lh.distance < hit.distance
+      sp = s
+      did_hit = true
+      color = s.color
+      hit = lh
+    end
+  end
+
+  if did_hit == true && depth < $MAXDEPTH
+    if sp.is_light == false
+      nray = Ray.new origin: hit.point, direction: rnd_dome(hit.normal)
+      ncolor = trace w, nray, depth + 1
+      at = nray.direction.dot(hit.normal)
+      color = color * (ncolor * at)
+    end
+  end
+
+  if did_hit == false || depth >= $MAXDEPTH
+    color = $zero
+  end
+
+  return color
+end
+
+def to255(v)
+  (v * 255.99).floor
+end
 
 def writeppm(data)
   File.open "crrb.ppm", "w" do |ppm|
-    ppm.print "P3\n",WIDTH," ",HEIGHT,"\n255\n"
+    ppm.print "P3\n", $WIDTH, " ", $HEIGHT, "\n255\n"
+    data.each do |row|
+      row.each do |c|
+        ppm.print to255(c.x), " ", to255(c.y), " ", to255(c.z), " "
+      end
+      ppm.print "\n"
+    end
   end
 end
 
 def main()
-  writeppm("as")
-end
+  data = Array(Array(V3)).new
+  world = World.new
+  vdu = (world.camera.rt - world.camera.lt) / $WIDTH.to_f32
+  vdv = (world.camera.lb - world.camera.lt) / $HEIGHT.to_f32
 
-v1 = V3.new 1_f32, 2_f32, 3_f32
-v2 = v1.unit
+  (0...$HEIGHT).each do |y|
+    row = [] of V3
+    (0...$WIDTH).each do |x|
+      color = $zero
+      ray = Ray.new $zero, $zero
+
+      ray.origin = world.camera.eye
+
+      (1..$SAMPLES).each do 
+        ray.direction = ((world.camera.lt + (vdu * (x + rand).to_f32 +
+                                             vdv * (y + rand).to_f32)) -
+                        world.camera.eye).unit
+        color = color + trace world, ray, 0
+      end
+
+      color = color / $SAMPLES.to_f32
+      row << color
+    end
+    data << row
+  end
+  writeppm data
+end
 
 main()

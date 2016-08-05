@@ -1,5 +1,5 @@
 #gcc -Ofast -std=c11 -lm -o crb crb.c -D_XOPEN_SOURCE=600 -march=native -fomit-frame-pointer
-all: crb crb-dbl crb-omp ocamlrb hsrb gorb nimrb nimrb_dbl asmrb
+all: crb crb-dbl crb-omp ocamlrb hsrb gorb nimrb nimrb_dbl asmrb crrb
 
 .PHONY: crb
 crb:
@@ -38,3 +38,7 @@ nimrb_dbl:
 asmrb:
 	fasm asmrb.fasm asmrb.o
 	gcc -o asmrb asmrb.o
+
+.PHONY: crrb
+crrb:
+	crystal build --release crrb.cr
