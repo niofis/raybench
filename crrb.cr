@@ -3,7 +3,7 @@ $HEIGHT = 720
 $SAMPLES = 50
 $MAXDEPTH = 5
 
-class V3
+struct V3
   getter x, y, z
 
   def initialize(@x : Float32, @y : Float32, @z : Float32)
@@ -44,7 +44,7 @@ end
 
 $zero = V3.new 0_f32, 0_f32, 0_f32
 
-class Ray
+struct Ray
   getter origin, direction
   setter origin, direction
 
@@ -56,14 +56,14 @@ class Ray
   end
 end
 
-class Camera
+struct Camera
   getter eye, lt, rt, lb
 
   def initialize(@eye : V3, @lt : V3, @rt : V3, @lb : V3)
   end
 end
 
-class Sphere
+struct Sphere
   getter center, radius, color, is_light
 
   def initialize(@center : V3, @radius : Float32, @color : V3, @is_light : Bool)
@@ -101,7 +101,7 @@ class Sphere
   end
 end
 
-class World
+struct World
   @camera : Camera
   @spheres : Array(Sphere)
   getter camera, spheres
@@ -131,7 +131,7 @@ class World
   end
 end
 
-class Hit
+struct Hit
   getter distance, point, normal
 
   def initialize(@distance : Float32, @point : V3, @normal : V3)
