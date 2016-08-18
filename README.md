@@ -244,9 +244,9 @@ $ crystal build --release crrb.cr
 ```
 
 ```
-$ time ./crrb
+$ time ./crrb 
 
-real    10m59.881s
-user    10m51.488s
-sys     0m0.760s
+real	2m1.735s
+user	2m1.116s
+sys	0m0.140s
 ```
