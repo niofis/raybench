@@ -237,3 +237,16 @@ real	3m19.547s
 user	3m18.432s
 sys	  0m0.268s
 ```
+
+Crystal (version 0.18.7)
+```
+$ crystal build --release crrb.cr
+```
+
+```
+$ time ./crrb
+
+real    10m59.881s
+user    10m51.488s
+sys     0m0.760s
+```
