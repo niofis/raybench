@@ -1,7 +1,7 @@
-$WIDTH = 1280
-$HEIGHT = 720
-$SAMPLES = 50
-$MAXDEPTH = 5
+WIDTH = 1280
+HEIGHT = 720
+SAMPLES = 50
+MAXDEPTH = 5
 
 struct V3
   getter x, y, z
@@ -42,7 +42,7 @@ struct V3
   end
 end
 
-$zero = V3.new 0_f32, 0_f32, 0_f32
+ZERO = V3.new 0_f32, 0_f32, 0_f32
 
 struct Ray
   getter origin, direction
@@ -94,10 +94,10 @@ struct Sphere
         return Hit.new distance: t, point: pt, normal: n
       end
       
-      return $nohit
+      return NOHIT
     end
 
-    return $nohit
+    return NOHIT
   end
 end
 
@@ -138,14 +138,14 @@ struct Hit
   end
 end
 
-$nohit = Hit.new 1e16_f32, $zero, $zero
+NOHIT = Hit.new 1e16_f32, ZERO, ZERO
 
 def rnd2()
   (2_f32 * rand).to_f32 - 1_f32
 end
 
 def rnd_dome(normal : V3)
-  p = $zero
+  p = ZERO
   d = -1_f32
   
   while d < 0
@@ -158,9 +158,9 @@ end
 
 def trace(w : World, r : Ray, depth : Int32)
   did_hit = false
-  hit = $nohit
-  color = $zero
-  sp = Sphere.new $zero, 0_f32, $zero, false
+  hit = NOHIT
+  color = ZERO
+  sp = Sphere.new ZERO, 0_f32, ZERO, false
 
   w.spheres.each do |s|
     lh = s.hit r
@@ -173,7 +173,7 @@ def trace(w : World, r : Ray, depth : Int32)
     end
   end
 
-  if did_hit == true && depth < $MAXDEPTH
+  if did_hit == true && depth < MAXDEPTH
     if sp.is_light == false
       nray = Ray.new origin: hit.point, direction: rnd_dome(hit.normal)
       ncolor = trace w, nray, depth + 1
@@ -182,8 +182,8 @@ def trace(w : World, r : Ray, depth : Int32)
     end
   end
 
-  if did_hit == false || depth >= $MAXDEPTH
-    color = $zero
+  if did_hit == false || depth >= MAXDEPTH
+    color = ZERO
   end
 
   return color
@@ -195,7 +195,7 @@ end
 
 def writeppm(data)
   File.open "crrb.ppm", "w" do |ppm|
-    ppm.print "P3\n", $WIDTH, " ", $HEIGHT, "\n255\n"
+    ppm.print "P3\n", WIDTH, " ", HEIGHT, "\n255\n"
     data.each do |row|
       row.each do |c|
         ppm.print to255(c.x), " ", to255(c.y), " ", to255(c.z), " "
@@ -208,25 +208,25 @@ end
 def main()
   data = Array(Array(V3)).new
   world = World.new
-  vdu = (world.camera.rt - world.camera.lt) / $WIDTH.to_f32
-  vdv = (world.camera.lb - world.camera.lt) / $HEIGHT.to_f32
+  vdu = (world.camera.rt - world.camera.lt) / WIDTH.to_f32
+  vdv = (world.camera.lb - world.camera.lt) / HEIGHT.to_f32
 
-  (0...$HEIGHT).each do |y|
+  (0...HEIGHT).each do |y|
     row = [] of V3
-    (0...$WIDTH).each do |x|
-      color = $zero
-      ray = Ray.new $zero, $zero
+    (0...WIDTH).each do |x|
+      color = ZERO
+      ray = Ray.new ZERO, ZERO
 
       ray.origin = world.camera.eye
 
-      (1..$SAMPLES).each do 
+      (1..SAMPLES).each do 
         ray.direction = ((world.camera.lt + (vdu * (x + rand).to_f32 +
                                              vdv * (y + rand).to_f32)) -
                         world.camera.eye).unit
         color = color + trace world, ray, 0
       end
 
-      color = color / $SAMPLES.to_f32
+      color = color / SAMPLES.to_f32
       row << color
     end
     data << row
