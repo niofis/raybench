@@ -250,3 +250,8 @@ real	2m1.735s
 user	2m1.116s
 sys	0m0.140s
 ```
+
+Rust (rustc 1.12.0-beta.1)
+```
+$ cargo script rsrb.rs -d rand=0.3.14
+```
