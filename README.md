@@ -251,7 +251,11 @@ user	2m1.116s
 sys	0m0.140s
 ```
 
-Rust (rustc 1.12.0-beta.1)
+Rust (rustc 1.13.0-nightly)
 ```
-$ cargo script rsrb.rs -d rand=0.3.14
+$ time cargo script rsrb.rs -d rand=0.3.14
+Progress: 99%
+real    1m32.392s
+user    1m31.732s
+sys     0m0.176s
 ```
