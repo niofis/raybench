@@ -259,3 +259,12 @@ real    1m32.392s
 user    1m31.732s
 sys     0m0.176s
 ```
+
+Java (1.7.0_111, OpenJDK IcedTea 2.6.7)
+```
+$ time java javarb 
+
+real	2m36.949s
+user	2m34.344s
+sys	0m1.832s
+```
