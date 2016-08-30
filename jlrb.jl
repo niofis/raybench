@@ -185,7 +185,7 @@ function init_world()
 end
 
 function writeppm(data::Array{Vec3,1})
-	ppm = open("crb.ppm","w+")
+	ppm = open("jlrb.ppm","w+")
 	@printf(ppm, "P3\n%u %u\n255\n", WIDTH, HEIGHT)
 	for y = 0:HEIGHT-1
 		for x = 1:WIDTH
