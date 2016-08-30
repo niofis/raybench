@@ -251,7 +251,7 @@ user	2m1.116s
 sys	0m0.140s
 ```
 
-Rust (rustc 1.13.0-nightly)
+Rust (rustc 1.13.0-nightly), thanks to @tilpner
 ```
 $ time cargo script rsrb.rs -d rand=0.3.14
 Progress: 99%
@@ -266,5 +266,14 @@ $ time java javarb
 
 real	2m36.949s
 user	2m34.344s
-sys	0m1.832s
+sys	  0m1.832s
+```
+Julia (version 0.4.6), thanks to @pierroelmito
+```
+$ time julia jlrb.jl 
+
+real	2m24.833s
+user	2m23.536s
+sys	  0m0.272s
+```
 ```
