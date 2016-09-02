@@ -1,5 +1,5 @@
 #gcc -Ofast -std=c11 -lm -o crb crb.c -D_XOPEN_SOURCE=600 -march=native -fomit-frame-pointer
-all: crb crb-dbl crb-omp ocamlrb hsrb gorb nimrb nimrb_dbl asmrb crrb
+all: crb crb-dbl crb-omp ocamlrb hsrb gorb nimrb nimrb_dbl asmrb crrb javarb
 
 .PHONY: crb
 crb:
@@ -42,3 +42,7 @@ asmrb:
 .PHONY: crrb
 crrb:
 	crystal build --release crrb.cr
+
+.PHONY: javarb
+javarb:
+	javac javarb.java
