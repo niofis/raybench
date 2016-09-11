@@ -1,4 +1,4 @@
-
+import Base.+, Base.-, Base.*, Base./
 
 const COEFF = 80
 const WIDTH = 16 * COEFF
@@ -12,55 +12,33 @@ immutable Vec3
 	z::Float32
 end
 
-function add(x::Vec3, y::Vec3)
-	Vec3(x.x + y.x, x.y + y.y, x.z + y.z)
-end
+const ZERO3 = Vec3(0f0, 0f0, 0f0)
 
-function mul(x::Vec3, y::Vec3)
-	Vec3(x.x * y.x, x.y * y.y, x.z * y.z)
-end
++(x::Vec3, y::Vec3) = Vec3(x.x + y.x, x.y + y.y, x.z + y.z)
+-(x::Vec3, y::Vec3) = Vec3(x.x - y.x, x.y - y.y, x.z - y.z)
+*(x::Vec3, y::Vec3) = Vec3(x.x * y.x, x.y * y.y, x.z * y.z)
+*(u::Float32, x::Vec3) = Vec3(x.x * u, x.y * u, x.z * u)
+/(x::Vec3, u::Float32) = Vec3(x.x / u, x.y / u, x.z / u)
 
-function sub(x::Vec3, y::Vec3)
-	Vec3(x.x - y.x, x.y - y.y, x.z - y.z)
-end
-
-function dot(x::Vec3, y::Vec3)
-	x.x * y.x + x.y * y.y + x.z * y.z
-end
-
-function muls(x::Vec3, u::Float32)
-	Vec3(x.x * u, x.y * u, x.z * u)
-end
-
-function divs(x::Vec3, u::Float32)
-	Vec3(x.x / u, x.y / u, x.z / u)
-end
-
-function norm(x::Vec3)
-	sqrt(dot(x, x))
-end
-
-function mkunit(x::Vec3)
-	divs(x, norm(x))
-end
+dot(x::Vec3, y::Vec3) = x.x * y.x + x.y * y.y + x.z * y.z
+norm(x::Vec3) = sqrt(dot(x, x))
+mkunit(x::Vec3) = x / norm(x)
 
 immutable Ray
 	origin::Vec3
 	direction::Vec3
 end
 
-function ray_point(r::Ray, t::Float32)
-	add(r.origin, muls(r.direction, t))
-end
+ray_point(r::Ray, t::Float32) = r.origin + t * r.direction
 
-immutable Camera
+type Camera
 	eye::Vec3
 	lt::Vec3
 	rt::Vec3
 	lb::Vec3
 end
 
-immutable Sphere
+type Sphere
 	center::Vec3
 	radius::Float32
 	color::Vec3
@@ -72,19 +50,15 @@ type World
 	camera::Camera
 end
 
-function randf()
-	rand(Float32)
-end
+randf() = rand(Float32)
 
 function rnd_dome(normal::Vec3)
-	p = Vec3(0, 0, 0)
+	p = ZERO3
+	d = -1f0
 
-	while true
-		p = mkunit(Vec3(2.0 * randf() - 1.0, 2.0 * randf() - 1.0, 2.0 * randf() - 1.0))
+	while d < 0f0
+		p = mkunit(Vec3(2f0 * randf() - 1f0, 2f0 * randf() - 1f0, 2f0 * randf() - 1f0))
 		d = dot(p, normal)
-		if d > 0 then
-			break
-		end
 	end
 
 	return p
@@ -96,70 +70,63 @@ immutable Hit
 	normal::Vec3
 end
 
+const NO_HIT = Hit(-1f0, ZERO3, ZERO3)
+const MAX_HIT = Hit(1f15, ZERO3, ZERO3)
+
 function hit_sphere(sp::Sphere, ray::Ray)
-	oc = sub(ray.origin, sp.center)
+	oc = ray.origin - sp.center
 	a = dot(ray.direction, ray.direction)
 	b = dot(oc, ray.direction)
 	c = dot(oc, oc) - (sp.radius * sp.radius)
-	dis = b*b - a*c
+	dis = b * b - a * c
 
-	res = Hit(0, Vec3(0, 0, 0), Vec3(0, 0, 0))
-
-	if dis > 0.0 then
+	if dis > 0f0 then
 		e = sqrt(dis)
 
 		t = (-b - e) / a
-		if t > 0.007 then
+		if t > 0.007f0 then
 			pt = ray_point(ray, t)
-			res = Hit(t, pt, mkunit(sub(pt, sp.center)))
-			return (true, res)
+			return Hit(t, pt, mkunit(pt - sp.center))
 		end
 
 		t = (-b + e) / a
-		if t > 0.007 then
+		if t > 0.007f0 then
 			pt = ray_point(ray, t)
-			res = Hit(t, pt, mkunit(sub(pt, sp.center)))
-			return (true, res)
+			return Hit(t, pt, mkunit(pt - sp.center))
 		end
-
-		return (false, res)
 	end
 
-	return (false, res)
+	NO_HIT
 end
 
 function trace(world::World, r::Ray, depth)
-	color = Vec3(0, 0, 0)
-	did_hit = false
-	fhit = Hit(1e15, Vec3(0, 0, 0), Vec3(0, 0, 0))
+	if depth >= MAX_DEPTH then
+		return ZERO3
+	end
+
+	fhit = MAX_HIT
 
 	sp = world.spheres[1]
-	for i = 1:size(world.spheres,1)
-		(hit_ok, res) = hit_sphere(world.spheres[i], r)
-		if hit_ok && res.dist > 0.0001 && res.dist < fhit.dist then
-			sp = world.spheres[i]
-			did_hit = true
-			color = sp.color
+	for sphere in world.spheres
+		res = hit_sphere(sphere, r)
+		if res.dist > 0.0001f0 && res.dist < fhit.dist then
+			sp = sphere
 			fhit = res
 		end
 	end
 
-	if did_hit && depth < MAX_DEPTH then
-		if !sp.is_light then
-			nray = Ray(fhit.point, rnd_dome(fhit.normal))
-			ncolor = trace(world, nray, depth + 1)
-			at = dot(nray.direction, fhit.normal)
-			color = mul(color, muls(ncolor, at))
-		else
-			color = sp.color
-		end
+	if fhit.dist == MAX_HIT.dist then
+		return ZERO3
 	end
 
-	if !did_hit || depth >= MAX_DEPTH then
-		return Vec3(0, 0, 0)
+	if sp.is_light then
+		return sp.color
 	end
 
-	return color
+	nray = Ray(fhit.point, rnd_dome(fhit.normal))
+	ncolor = trace(world, nray, depth + 1)
+	at = dot(nray.direction, fhit.normal)
+	return sp.color * (at * ncolor)
 end
 
 function init_world()
@@ -172,14 +139,14 @@ function init_world()
 
 	w = World([], c)
 
-	push!(w.spheres, Sphere(Vec3(0.0, -10002.0, 0.0), 9999.0,	Vec3(1.0,1.0,1.0), false))
-	push!(w.spheres, Sphere(Vec3(-10012.0, 0.0, 0.0), 9999.0,	Vec3(1.0,0.0,0.0), false))
-	push!(w.spheres, Sphere(Vec3(10012.0, 0.0, 0.0),	9999.0,	Vec3(0.0,1.0,0.0), false))
-	push!(w.spheres, Sphere(Vec3(0.0, 0.0, -10012.0), 9999.0,	Vec3(1.0,1.0,1.0), false))
-	push!(w.spheres, Sphere(Vec3(0.0, 10012.0, 0.0),	9999.0,	Vec3(1.0,1.0,1.0), true))
-	push!(w.spheres, Sphere(Vec3(-5.0, 0.0, 2.0),		2.0,	Vec3(1.0,1.0,0.0), false))
-	push!(w.spheres, Sphere(Vec3(0.0, 5.0, -1.0),		4.0,	Vec3(1.0,0.0,0.0), false))
-	push!(w.spheres, Sphere(Vec3(8.0, 5.0, -1.0),		2.0,	Vec3(0.0,0.0,1.0), false))
+	push!(w.spheres, Sphere(Vec3(0.0, -10002.0, 0.0), 9999.0, Vec3(1.0, 1.0, 1.0), false))
+	push!(w.spheres, Sphere(Vec3(-10012.0, 0.0, 0.0), 9999.0, Vec3(1.0, 0.0, 0.0), false))
+	push!(w.spheres, Sphere(Vec3(10012.0, 0.0, 0.0),  9999.0, Vec3(0.0, 1.0, 0.0), false))
+	push!(w.spheres, Sphere(Vec3(0.0, 0.0, -10012.0), 9999.0, Vec3(1.0, 1.0, 1.0), false))
+	push!(w.spheres, Sphere(Vec3(0.0, 10012.0, 0.0),  9999.0, Vec3(1.0, 1.0, 1.0), true))
+	push!(w.spheres, Sphere(Vec3(-5.0, 0.0, 2.0),     2.0,    Vec3(1.0, 1.0, 0.0), false))
+	push!(w.spheres, Sphere(Vec3(0.0, 5.0, -1.0),     4.0,    Vec3(1.0, 0.0, 0.0), false))
+	push!(w.spheres, Sphere(Vec3(8.0, 5.0, -1.0),     2.0,    Vec3(0.0, 0.0, 1.0), false))
 
 	return w
 end
@@ -190,9 +157,9 @@ function writeppm(data::Array{Vec3,1})
 	for y = 0:HEIGHT-1
 		for x = 1:WIDTH
 			local c = data[y * WIDTH + x]
-			r = convert(UInt16, floor(c.x * 255.99))
-			g = convert(UInt16, floor(c.y * 255.99))
-			b = convert(UInt16, floor(c.z * 255.99))
+			r = convert(UInt16, floor(c.x * 255.99f0))
+			g = convert(UInt16, floor(c.y * 255.99f0))
+			b = convert(UInt16, floor(c.z * 255.99f0))
 			@printf(ppm, "%u %u %u ", r, g, b)
 		end
 		@printf(ppm, "\n")
@@ -202,27 +169,27 @@ end
 
 function main()
 	world = init_world()
-	data = fill(Vec3(0, 0, 0), (WIDTH * HEIGHT))
+	data = fill(ZERO3, (WIDTH * HEIGHT))
 
-	vdu = divs(sub(world.camera.rt, world.camera.lt), convert(Float32, WIDTH))
-	vdv = divs(sub(world.camera.lb, world.camera.lt), convert(Float32, HEIGHT))
+	vdu = (world.camera.rt - world.camera.lt) / convert(Float32, WIDTH)
+	vdv = (world.camera.lb - world.camera.lt) / convert(Float32, HEIGHT)
 
-	for y = 0:HEIGHT-1
-		for x = 1:WIDTH
-			c = Vec3(0, 0, 0)
+	for y = 0:HEIGHT - 1
+		for x = 0:WIDTH - 1
+			c = ZERO3
 			for s = 1:SAMPLES
-				u = muls(vdu, convert(Float32, x) + randf())
-				v = muls(vdv, convert(Float32, y) + randf())
-				d = mkunit(sub(add(add(world.camera.lt, u), v), world.camera.eye))
+				u = (convert(Float32, x) + randf()) * vdu
+				v = (convert(Float32, y) + randf()) * vdv
+				d = mkunit(world.camera.lt + u + v - world.camera.eye)
 				r = Ray(world.camera.eye, d)
-				c = add(c, trace(world, r, 0))
+				c += trace(world, r, 0)
 			end
-			data[y * WIDTH + x] = divs(c, convert(Float32, SAMPLES))
+			data[1 + y * WIDTH + x] = c / convert(Float32, SAMPLES)
 		end
 	end
 
 	writeppm(data)
 end
 
-main()
+@time main()
 
