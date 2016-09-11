@@ -251,7 +251,7 @@ user	2m1.116s
 sys	0m0.140s
 ```
 
-Rust (rustc 1.13.0-nightly), thanks to @tilpner
+Rust (rustc 1.13.0-nightly), thanks to [tilpner](https://github.com/tilpner)
 ```
 $ time cargo script rsrb.rs -d rand=0.3.14
 Progress: 99%
@@ -268,12 +268,13 @@ real	2m36.949s
 user	2m34.344s
 sys	  0m1.832s
 ```
-Julia (version 0.4.6), thanks to @pierroelmito
+Julia (version 0.4.6), thanks to [pierroelmito](https://github.com/pierroelmito)
 ```
 $ time julia jlrb.jl 
+118.540627 seconds (286.21 k allocations: 22.626 MB, 0.08% gc time)
 
-real	2m24.833s
-user	2m23.536s
-sys	  0m0.272s
+real	2m1.166s
+user	2m0.324s
+sys	  0m0.260s
 ```
 ```
