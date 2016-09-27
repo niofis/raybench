@@ -9,7 +9,7 @@ const
   MAXDEPTH = 5
 
 type V3 = tuple[x: float32, y: float32, z: float32]
-let zero = (0'f32, 0'f32, 0'f32)
+const zero = (0'f32, 0'f32, 0'f32)
 
 proc `+`*(a, b: V3): V3 = (x: a.x + b.x, y: a.y + b.y, z: a.z + b.z)
 proc `*`*(a, b: V3): V3 = (x: a.x * b.x, y: a.y * b.y, z: a.z * b.z)
@@ -66,7 +66,7 @@ proc world_new(): World =
 
 type Hit = tuple[distance: float32, point: V3, normal: V3]
 
-let nohit = (distance: 1e16'f32, point: zero, normal: zero)
+const nohit = (distance: 1e16'f32, point: zero, normal: zero)
 
 proc sphit(sp: Sphere, ray: Ray): Hit =
   let oc = ray.origin - sp.center
