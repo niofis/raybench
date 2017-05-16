@@ -7,10 +7,10 @@ import  strutils,
 const 
   WIDTH = 1280
   HEIGHT = 720
-  SAMPLES = 50
+  SAMPLES = 50'f32
   MAXDEPTH = 5
 
-proc pMap*[T, S](data: openArray[T], op: proc (x: T): S {.closure,thread.}): seq[S]{.inline.} =
+proc pMap*[T, S](data: openArray[T], op: proc (x: T): S {.closure,gcsafe.}): seq[S]{.inline.} =
     newSeq(result, data.len)
     var vals = newSeq[FlowVar[S]](data.len)
 
@@ -108,7 +108,7 @@ proc sphit(sp: Sphere, ray: Ray): Hit =
   
   return nohit
 
-proc rnd2(): float32 = float32(2'f32 * random(1'f32)) - 1'f32
+proc rnd2(): float32 = 2'f32 * random(1.0) - 1.0
 
 proc rnd_dome(normal: V3): V3 =
   var d:float32
@@ -163,33 +163,25 @@ proc writeppm(data: seq[seq[V3]]) =
 
 
 proc main() =
-  var data = newSeq[seq[V3]]()
   let world = world_new()
   let vdu = (world.camera.rt - world.camera.lt) / float32(WIDTH)
   let vdv = (world.camera.lb - world.camera.lt) / float32(HEIGHT)
-  proc getRay(x,y:int): auto =
-    (proc (n:int): V3 =
-      var ray:Ray
-      ray.origin = world.camera.eye
-      ray.direction = ((world.camera.lt + (vdu * (float32(x) + float32(random(1'f32))) +
-                          vdv * (float32(y) + float32(random(1'f32))))) -
-                          world.camera.eye).unit
-      return trace(world, ray, 0))
+  let ss = toSeq(1..SAMPLES.int)
+  let hs = toSeq(0..<HEIGHT)
+  let ws = toSeq(0..<WIDTH)
 
   randomize()
   
-  for y in 0..<HEIGHT:
-    var row = newSeq[V3]()
-    for x in 0..<WIDTH:
-      var color = zero
-      
-      var t = getRay(x, y)
-
-      color = foldl(pMap(toSeq(1..SAMPLES), t), a + b)
-
-      color = color / float32(SAMPLES)
-      row.add(color)
-    data.add(row)
-  writeppm(data)
+  hs.pMap(proc (y:int): auto =
+    ws.map(proc (x:int): auto =
+      foldl(ss.mapIt(
+        trace(world, (
+          world.camera.eye,
+          ((world.camera.lt + (vdu * (float32(x) + random(1.0)) +
+                        vdv * (float32(y) + random(1.0)))) -
+                        world.camera.eye).unit
+          ), 0)), a + b) / SAMPLES
+      )
+  ).writeppm
 
 main()
