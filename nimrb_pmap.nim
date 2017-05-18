@@ -10,7 +10,7 @@ const
   SAMPLES = 50'f32
   MAXDEPTH = 5
 
-proc pMap*[T, S](data: openArray[T], op: proc (x: T): S {.closure,gcsafe.}): seq[S]{.inline.} =
+proc pmap[T, S](data: openArray[T], op: proc (x: T): S {.closure,gcsafe.}): seq[S]{.inline.} =
     newSeq(result, data.len)
     var vals = newSeq[FlowVar[S]](data.len)
 
@@ -172,7 +172,7 @@ proc main() =
 
   randomize()
   
-  hs.pMap(proc (y:int): auto =
+  hs.pmap(proc (y:int): auto =
     ws.map(proc (x:int): auto =
       foldl(ss.mapIt(
         trace(world, (
