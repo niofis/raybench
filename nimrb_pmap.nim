@@ -10,6 +10,8 @@ const
   SAMPLES = 50'f32
   MAXDEPTH = 5
 
+#based on code from here:
+#http://blog.ubergarm.com/10-nim-one-liners-to-impress-your-friends/
 proc pmap[T, S](data: openArray[T], op: proc (x: T): S {.closure,gcsafe.}): seq[S]{.inline.} =
     newSeq(result, data.len)
     var vals = newSeq[FlowVar[S]](data.len)
