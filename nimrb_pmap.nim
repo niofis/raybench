@@ -7,7 +7,7 @@ import  strutils,
 const 
   WIDTH = 1280
   HEIGHT = 720
-  SAMPLES = 50'f32
+  SAMPLES = 50.0
   MAXDEPTH = 5
 
 #based on code from here:
@@ -94,14 +94,14 @@ proc sphit(sp: Sphere, ray: Ray): Hit =
     var e = sqrt(dis)
     var t:float32 = (-b - e) / a
 
-    if t > 0.007'f32:
+    if t > 0.007:
       let pt = ray.point(t)
       let n = (pt - sp.center).unit
       return (distance: t, point: pt, normal: n)
 
     t = (-b + e) / a
 
-    if t > 0.007'f32:
+    if t > 0.007:
       let pt = ray.point(t)
       let n = (pt - sp.center).unit
       return (distance: t, point: pt, normal: n)
@@ -110,13 +110,13 @@ proc sphit(sp: Sphere, ray: Ray): Hit =
   
   return nohit
 
-proc rnd2(): float32 = 2'f32 * random(1.0) - 1.0
+proc rnd2(): float32 = 2.0 * random(1.0) - 1.0
 
 proc rnd_dome(normal: V3): V3 =
   var d:float32
   var p:V3
 
-  d = -1'f32
+  d = -1.0
 
   while d < 0:
     p = ((rnd2(), rnd2(), rnd2())).unit
@@ -156,21 +156,22 @@ proc writeppm(data: seq[seq[V3]]) =
   for row in data:
     for c in row:
       ppm.write(format("$# $# $# ",
-        int(floor(c.x * 255.99'f32)),
-        int(floor(c.y * 255.99'f32)),
-        int(floor(c.z * 255.99'f32))))
+        int(floor(c.x * 255.99)),
+        int(floor(c.y * 255.99)),
+        int(floor(c.z * 255.99))))
     ppm.write("\n")
   ppm.close()
 
 
 
 proc main() =
-  let world = world_new()
-  let vdu = (world.camera.rt - world.camera.lt) / float32(WIDTH)
-  let vdv = (world.camera.lb - world.camera.lt) / float32(HEIGHT)
-  let ss = toSeq(1..SAMPLES.int)
-  let hs = toSeq(0..<HEIGHT)
-  let ws = toSeq(0..<WIDTH)
+  let
+    world = world_new()
+    vdu = (world.camera.rt - world.camera.lt) / float32(WIDTH)
+    vdv = (world.camera.lb - world.camera.lt) / float32(HEIGHT)
+    ss = 1..SAMPLES.int
+    hs = toSeq(0..<HEIGHT)
+    ws = toSeq(0..<WIDTH)
 
   randomize()
   
