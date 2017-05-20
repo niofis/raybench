@@ -12,16 +12,8 @@ const
 
 #based on code from here:
 #http://blog.ubergarm.com/10-nim-one-liners-to-impress-your-friends/
-proc pmap[T, S](data: openArray[T], op: proc (x: T): S {.closure,gcsafe.}): seq[S]{.inline.} =
-    newSeq(result, data.len)
-    var vals = newSeq[FlowVar[S]](data.len)
-
-    for i in 0..data.high:
-        vals[i] = spawn op(data[i])
-
-    for i in 0..data.high:
-        var res = ^vals[i]
-        result[i] = res
+proc pmap[T, S](data: seq[T], op: proc (x: T): S {.closure,gcsafe.}): seq[S]{.inline.} =
+  data.mapIt(FlowVar[S], spawn op(it)).mapIt(^it)
 
 type V3 = tuple[x: float32, y: float32, z: float32]
 const zero = (0'f32, 0'f32, 0'f32)
