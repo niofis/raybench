@@ -1,6 +1,4 @@
-import strutils
-import math
-import random
+import strutils, math, random
 
 const 
   WIDTH = 1280
@@ -77,16 +75,16 @@ proc sphit(sp: Sphere, ray: Ray): Hit =
 
   if dis > 0:
     var e = sqrt(dis)
-    var t:float32 = (-b - e) / a
+    var t = (-b - e) / a
 
-    if t > 0.007'f32:
+    if t > 0.007:
       let pt = ray.point(t)
       let n = (pt - sp.center).unit
       return (distance: t, point: pt, normal: n)
 
     t = (-b + e) / a
 
-    if t > 0.007'f32:
+    if t > 0.007:
       let pt = ray.point(t)
       let n = (pt - sp.center).unit
       return (distance: t, point: pt, normal: n)
@@ -95,13 +93,13 @@ proc sphit(sp: Sphere, ray: Ray): Hit =
   
   return nohit
 
-proc rnd2(): float32 = float32(2'f32 * random(1'f32)) - 1'f32
+proc rnd2(): float32 = (2.0 * random(1.0)) - 1.0
 
 proc rnd_dome(normal: V3): V3 =
   var d:float32
   var p:V3
 
-  d = -1'f32
+  d = -1.0
 
   while d < 0:
     p = ((rnd2(), rnd2(), rnd2())).unit
@@ -141,35 +139,35 @@ proc writeppm(data: seq[seq[V3]]) =
   for row in data:
     for c in row:
       ppm.write(format("$# $# $# ",
-        int(floor(c.x * 255.99'f32)),
-        int(floor(c.y * 255.99'f32)),
-        int(floor(c.z * 255.99'f32))))
+        floor(c.x * 255.99).int,
+        floor(c.y * 255.99).int,
+        floor(c.z * 255.99).int))
     ppm.write("\n")
   ppm.close()
 
 proc main() =
   var data = newSeq[seq[V3]]()
   let world = world_new()
-  let vdu = (world.camera.rt - world.camera.lt) / float32(WIDTH)
-  let vdv = (world.camera.lb - world.camera.lt) / float32(HEIGHT)
+  let vdu = (world.camera.rt - world.camera.lt) / WIDTH.float32
+  let vdv = (world.camera.lb - world.camera.lt) / HEIGHT.float32
 
   randomize()
   
-  for y in 0..(HEIGHT-1):
+  for y in 0..<HEIGHT:
     var row = newSeq[V3]()
-    for x in 0..(WIDTH-1):
+    for x in 0..<WIDTH:
       var color = zero
       var ray:Ray
 
       ray.origin = world.camera.eye
 
       for i in 1..SAMPLES:
-        ray.direction = ((world.camera.lt + (vdu * (float32(x) + float32(random(1'f32))) +
-                        vdv * (float32(y) + float32(random(1'f32))))) -
+        ray.direction = ((world.camera.lt + (vdu * (x.float32 + random(1.0)) +
+                        vdv * (y.float32 + random(1.0)))) -
                         world.camera.eye).unit
         color = color + trace(world, ray, 0)
 
-      color = color / float32(SAMPLES)
+      color = color / SAMPLES.float32
       row.add(color)
     data.add(row)
   writeppm(data)
