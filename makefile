@@ -27,7 +27,7 @@ gorb:
 
 .PHONY: nimrb
 nimrb:
-	nim c --boundChecks:off --floatChecks:off --opt:speed -d:release nimrb.nim
+	nim c --hints:off -d:release nimrb.nim
 
 .PHONY: nimrb_dbl
 nimrb_dbl:
