@@ -29,38 +29,36 @@ type Sphere = tuple[center: V3, radius: float32, color: V3, is_light: bool]
 type World = tuple[camera: Camera, spheres: seq[Sphere]]
 
 proc world_new(): World =
-  var world: World
-  world.camera = (eye: (0'f32, 4.5'f32, 75'f32),
+  result.camera = (eye: (0'f32, 4.5'f32, 75'f32),
                   lt:  (-8'f32, 9'f32, 50'f32),
                   rt:  (8'f32, 9'f32, 50'f32),
                   lb:  (-8'f32, 0'f32, 50'f32))
 
-  world.spheres = newSeq[Sphere]()
+  result.spheres = newSeq[Sphere]()
   
-  world.spheres.add((center: (0'f32, -10002'f32, 0'f32), radius: 9999'f32,
+  result.spheres.add((center: (0'f32, -10002'f32, 0'f32), radius: 9999'f32,
                       color: (1'f32, 1'f32, 1'f32), is_light: false))
 
-  world.spheres.add((center: (-10012'f32, 0'f32, 0'f32), radius: 9999'f32,
+  result.spheres.add((center: (-10012'f32, 0'f32, 0'f32), radius: 9999'f32,
                       color: (1'f32, 0'f32, 0'f32), is_light: false))
 
-  world.spheres.add((center: (10012'f32, 0'f32, 0'f32), radius: 9999'f32,
+  result.spheres.add((center: (10012'f32, 0'f32, 0'f32), radius: 9999'f32,
                       color: (0'f32, 1'f32, 0'f32), is_light: false))
 
-  world.spheres.add((center: (0'f32, 0'f32, -10012'f32), radius: 9999'f32,
+  result.spheres.add((center: (0'f32, 0'f32, -10012'f32), radius: 9999'f32,
                       color: (1'f32, 1'f32, 1'f32), is_light: false))
 
-  world.spheres.add((center: (0'f32, 10012'f32, 0'f32), radius: 9999'f32,
+  result.spheres.add((center: (0'f32, 10012'f32, 0'f32), radius: 9999'f32,
                       color: (1'f32, 1'f32, 1'f32), is_light: true))
 
-  world.spheres.add((center: (-5'f32, 0'f32, 2'f32), radius: 2'f32,
+  result.spheres.add((center: (-5'f32, 0'f32, 2'f32), radius: 2'f32,
                       color: (1'f32, 1'f32, 0'f32), is_light: false))
 
-  world.spheres.add((center: (0'f32, 5'f32, -1'f32), radius: 4'f32,
+  result.spheres.add((center: (0'f32, 5'f32, -1'f32), radius: 4'f32,
                       color: (1'f32, 0'f32, 0'f32), is_light: false))
 
-  world.spheres.add((center: (8'f32, 5'f32, -1'f32), radius: 2'f32,
+  result.spheres.add((center: (8'f32, 5'f32, -1'f32), radius: 2'f32,
                       color: (0'f32, 0'f32, 1'f32), is_light: false))
-  return world
 
 type Hit = tuple[distance: float32, point: V3, normal: V3]
 
@@ -89,9 +87,7 @@ proc sphit(sp: Sphere, ray: Ray): Hit =
       let n = (pt - sp.center).unit
       return (distance: t, point: pt, normal: n)
 
-    return nohit
-  
-  return nohit
+  nohit
 
 proc rnd2(): float32 = (2.0 * random(1.0)) - 1.0
 
@@ -102,15 +98,16 @@ proc rnd_dome(normal: V3): V3 =
   d = -1.0
 
   while d < 0:
-    p = ((rnd2(), rnd2(), rnd2())).unit
+    p = unit((rnd2(), rnd2(), rnd2()))
     d = p.dot(normal)
-  return p
+  p
 
 proc trace(w: World, r: Ray, depth: int): V3 =
   var did_hit = false
   var hit = nohit
-  var color = zero
   var sp:Sphere
+
+  result = zero
 
   for s in w.spheres:
     let lh = s.sphit(r)
@@ -118,20 +115,18 @@ proc trace(w: World, r: Ray, depth: int): V3 =
     if lh.distance < hit.distance:
       sp = s
       did_hit = true
-      color = s.color
+      result = s.color
       hit = lh
 
-  if did_hit == true and depth < MAXDEPTH:
-    if sp.is_light == false:
+  if did_hit and depth < MAXDEPTH:
+    if not sp.is_light:
       let nray = (origin: hit.point, direction: rnd_dome(hit.normal))
       let ncolor = trace(w, nray, depth + 1)
       let at = nray.direction.dot(hit.normal)
-      color = color * (ncolor * at)
+      result = result * (ncolor * at)
 
-  if did_hit == false or depth >= MAXDEPTH:
-    color = zero
-
-  return color
+  if not did_hit or depth >= MAXDEPTH:
+    result = zero
 
 proc writeppm(data: seq[seq[V3]]) =
   let ppm = open("nimrb.ppm", fmWrite)
