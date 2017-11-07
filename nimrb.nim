@@ -7,7 +7,7 @@ const
   MAXDEPTH = 5
 
 type V3 = tuple[x: float32, y: float32, z: float32]
-const zero = (0'f32, 0'f32, 0'f32)
+const zero = (0f, 0f, 0f)
 
 proc `+`*(a, b: V3): V3 = (x: a.x + b.x, y: a.y + b.y, z: a.z + b.z)
 proc `*`*(a, b: V3): V3 = (x: a.x * b.x, y: a.y * b.y, z: a.z * b.z)
@@ -29,40 +29,40 @@ type Sphere = tuple[center: V3, radius: float32, color: V3, is_light: bool]
 type World = tuple[camera: Camera, spheres: seq[Sphere]]
 
 proc world_new(): World =
-  result.camera = (eye: (0'f32, 4.5'f32, 75'f32),
-                  lt:  (-8'f32, 9'f32, 50'f32),
-                  rt:  (8'f32, 9'f32, 50'f32),
-                  lb:  (-8'f32, 0'f32, 50'f32))
+  result.camera = (eye: (0f, 4.5f, 75f),
+                  lt:  (-8f, 9f, 50f),
+                  rt:  (8f, 9f, 50f),
+                  lb:  (-8f, 0f, 50f))
 
   result.spheres = newSeq[Sphere]()
   
-  result.spheres.add((center: (0'f32, -10002'f32, 0'f32), radius: 9999'f32,
-                      color: (1'f32, 1'f32, 1'f32), is_light: false))
+  result.spheres.add((center: (0f, -10002f, 0f), radius: 9999f,
+                      color: (1f, 1f, 1f), is_light: false))
 
-  result.spheres.add((center: (-10012'f32, 0'f32, 0'f32), radius: 9999'f32,
-                      color: (1'f32, 0'f32, 0'f32), is_light: false))
+  result.spheres.add((center: (-10012f, 0f, 0f), radius: 9999f,
+                      color: (1f, 0f, 0f), is_light: false))
 
-  result.spheres.add((center: (10012'f32, 0'f32, 0'f32), radius: 9999'f32,
-                      color: (0'f32, 1'f32, 0'f32), is_light: false))
+  result.spheres.add((center: (10012f, 0f, 0f), radius: 9999f,
+                      color: (0f, 1f, 0f), is_light: false))
 
-  result.spheres.add((center: (0'f32, 0'f32, -10012'f32), radius: 9999'f32,
-                      color: (1'f32, 1'f32, 1'f32), is_light: false))
+  result.spheres.add((center: (0f, 0f, -10012f), radius: 9999f,
+                      color: (1f, 1f, 1f), is_light: false))
 
-  result.spheres.add((center: (0'f32, 10012'f32, 0'f32), radius: 9999'f32,
-                      color: (1'f32, 1'f32, 1'f32), is_light: true))
+  result.spheres.add((center: (0f, 10012f, 0f), radius: 9999f,
+                      color: (1f, 1f, 1f), is_light: true))
 
-  result.spheres.add((center: (-5'f32, 0'f32, 2'f32), radius: 2'f32,
-                      color: (1'f32, 1'f32, 0'f32), is_light: false))
+  result.spheres.add((center: (-5f, 0f, 2f), radius: 2f,
+                      color: (1f, 1f, 0f), is_light: false))
 
-  result.spheres.add((center: (0'f32, 5'f32, -1'f32), radius: 4'f32,
-                      color: (1'f32, 0'f32, 0'f32), is_light: false))
+  result.spheres.add((center: (0f, 5f, -1f), radius: 4f,
+                      color: (1f, 0f, 0f), is_light: false))
 
-  result.spheres.add((center: (8'f32, 5'f32, -1'f32), radius: 2'f32,
-                      color: (0'f32, 0'f32, 1'f32), is_light: false))
+  result.spheres.add((center: (8f, 5f, -1f), radius: 2f,
+                      color: (0f, 0f, 1f), is_light: false))
 
 type Hit = tuple[distance: float32, point: V3, normal: V3]
 
-const nohit = (distance: 1e16'f32, point: zero, normal: zero)
+const nohit = (distance: 1e16f, point: zero, normal: zero)
 
 proc sphit(sp: Sphere, ray: Ray): Hit =
   let oc = ray.origin - sp.center
