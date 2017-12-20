@@ -27,7 +27,7 @@ gorb:
 
 .PHONY: nimrb
 nimrb:
-	nim c --hints:off -d:release nimrb.nim
+	nim c --hints:off -d:release --passC:"-march=native -ffast-math"  nimrb.nim
 
 .PHONY: nimrb_dbl
 nimrb_dbl:
