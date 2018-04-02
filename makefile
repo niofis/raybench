@@ -29,6 +29,15 @@ gorb:
 nimrb:
 	nim c --hints:off -d:release nimrb.nim
 
+.PHONY: nimrb_opt
+nimrb_opt:
+	nim c --hints:off -d:release nimrb_opt.nim
+
+.PHONY: nimrb_fn
+nimrb_fn:
+	nim c --hints:off -d:release nimrb_fn.nim
+ 
+
 .PHONY: nimrb_dbl
 nimrb_dbl:
 	nim c --boundChecks:off --floatChecks:off --opt:speed -d:release nimrb_dbl.nim
