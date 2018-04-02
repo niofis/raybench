@@ -27,7 +27,7 @@ gorb:
 
 .PHONY: nimrb
 nimrb:
-	nim c --hints:off -d:release nimrb.nim
+	nim c --hints:off -d:release --passC:"-march=native -ffast-math"  nimrb.nim
 
 .PHONY: nimrb_opt
 nimrb_opt:
@@ -44,7 +44,7 @@ nimrb_dbl:
 
 .PHONY: nimrb_pmap
 nimrb_pmap:
-	nim c --boundChecks:off --floatChecks:off --opt:speed -d:release --threads:on nimrb_pmap.nim
+	nim c --boundChecks:off --floatChecks:off --opt:speed -d:release --threads:on --passC:"-march=native -ffast-math" nimrb_pmap.nim
 
 .PHONY: asmrb
 asmrb:
