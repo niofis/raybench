@@ -5,6 +5,10 @@ all: crb crb-dbl crb-omp ocamlrb hsrb gorb nimrb nimrb_dbl asmrb crrb javarb
 crb:
 	gcc crb.c -o crb -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
 
+.PHONY: crb_opt
+crb_opt:
+	gcc crb_opt.c -o crb_opt -std=c11 -O3 -lm -D_XOPEN_SOURCE=600 -march=native -fopt-info-vec-all -ffast-math
+
 .PHONY: crb-dbl
 crb-dbl:
 	gcc crb-dbl.c -o crb-dbl -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
