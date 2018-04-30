@@ -269,6 +269,6 @@ fn render() -> PPM {
 
 fn main() {
     let image = render();
-    let mut out = BufWriter::new(File::create("rsrb.ppm").expect("Couldn't create output file"));
+    let mut out = BufWriter::new(File::create("rsrb_mt.ppm").expect("Couldn't create output file"));
     image.write(&mut out).expect("Couldn't write to output file");
 }
