@@ -3,7 +3,7 @@ extern crate rayon;
 
 use std::ops::{Add, Div, Mul, Sub};
 use std::fs::File;
-use std::io::{self, BufWriter};
+use std::io::{self, BufWriter, Write};
 use rand::{Rng, SeedableRng};
 use rayon::par_iter::{ExactParallelIterator, IntoParallelIterator, ParallelIterator};
 
@@ -230,6 +230,7 @@ fn render() -> PPM {
 
     let mut out = PPM::new(WIDTH, HEIGHT);
 
+    let total = WIDTH * HEIGHT;
     let mut data = Vec::new();
     (0..WIDTH * HEIGHT)
         .into_par_iter()
