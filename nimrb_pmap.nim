@@ -2,7 +2,8 @@ import  strutils,
         math,
         random,
         sequtils,
-        threadpool
+        threadpool,
+        cpuinfo
 
 const 
   WIDTH = 1280
@@ -10,10 +11,16 @@ const
   SAMPLES = 50.0
   MAXDEPTH = 5
 
-#based on code from here:
-#http://blog.ubergarm.com/10-nim-one-liners-to-impress-your-friends/
-proc pmap[T, S](data: seq[T], op: proc (x: T): S {.closure,gcsafe.}): seq[S]{.inline.} =
-  data.mapIt(FlowVar[S], spawn op(it)).mapIt(^it)
+let num_cpus = countProcessors()
+
+proc worker[T, S](data: seq[T], op: proc (x: T): S {.closure.}): seq[S]{.inline.} =
+  data.map(op)
+
+proc pmap*[T, S](data: seq[T], op: proc (x: T): S {.closure.} ): seq[S]{.inline.} =
+  let segments = data.distribute(num_cpus)
+
+  segments.map(proc (segment: seq[T]): auto =
+    spawn worker(segment, op)).mapIt(^it).concat
 
 type V3 = tuple[x: float32, y: float32, z: float32]
 const zero = (0'f32, 0'f32, 0'f32)
@@ -102,7 +109,7 @@ proc sphit(sp: Sphere, ray: Ray): Hit =
   
   return nohit
 
-proc rnd2(): float32 = 2.0 * random(1.0) - 1.0
+proc rnd2(): float32 = 2.0 * rand(1.0) - 1.0
 
 proc rnd_dome(normal: V3): V3 =
   var d:float32
@@ -172,8 +179,8 @@ proc main() =
       foldl(ss.mapIt(
         trace(world, (
           world.camera.eye,
-          ((world.camera.lt + (vdu * (float32(x) + random(1.0)) +
-                        vdv * (float32(y) + random(1.0)))) -
+          ((world.camera.lt + (vdu * (float32(x) + rand(1.0)) +
+                        vdv * (float32(y) + rand(1.0)))) -
                         world.camera.eye).unit
           ), 0)), a + b) / SAMPLES
       )
