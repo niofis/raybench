@@ -17,61 +17,47 @@ class V3 {
     float z;
 
     V3 operator+(V3 &b) {
-      V3 res {
+      return V3 {
         .x = this->x + b.x,
           .y = this->y + b.y,
           .z = this->z + b.z
       };
-      return res;
     }
 
     V3 operator*(V3 &b) {
-      V3 res {
+      return V3 {
         .x = this->x * b.x,
           .y = this->y * b.y,
           .z = this->z * b.z
       };
-      return res;
     }
 
     V3 operator-(V3 &b) {
-      V3 res {
+      return V3 {
         .x = this->x - b.x,
           .y = this->y - b.y,
           .z = this->z - b.z
       };
-      return res;
     }
 
     V3 operator*(float s) {
-      V3 res {
+      return V3 {
         .x = this->x * s,
           .y = this->y * s,
           .z = this->z * s
       };
-      return res;
-    }
-
-    V3 operator/(V3 &b) {
-      V3 res {
-        .x = this->x / b.x,
-          .y = this->y / b.y,
-          .z = this->z / b.z
-      };
-      return res;
     }
 
     V3 operator/(float s) {
-      V3 res {
+      return V3 {
         .x = this->x / s,
           .y = this->y / s,
           .z = this->z / s
       };
-      return res;
     }
 
     float dot(V3 &b) {
-      return  this->x * b.x +
+      return this->x * b.x +
         this->y * b.y +
         this->z * b.z;
     }
@@ -96,12 +82,8 @@ class Ray {
     V3 direction;
 
     V3 point(float t) {
-      V3 res = {
-        .x = this->origin.x + (this->direction.x * t),
-        .y = this->origin.y + (this->direction.y * t),
-        .z = this->origin.z + (this->direction.z * t)
-      };
-      return res;
+      V3 tmp = this->direction * t;
+      return this->origin + tmp;
     }
 };
 
@@ -129,7 +111,7 @@ class Sphere {
 
     Hit hit(Ray &ray)
     {
-      Hit hit = {.dist = 1e15};
+      Hit hit = {0};
       V3 oc = ray.origin - this->center;
       float a = ray.direction.dot(ray.direction);
       float b = oc.dot(ray.direction);
@@ -138,7 +120,7 @@ class Sphere {
 
       if(dis > 0.0f)
       {
-        float e = sqrt(dis);
+        float e = sqrtf(dis);
         float t = (-b - e) / a;
 
         if(t > 0.007f)
