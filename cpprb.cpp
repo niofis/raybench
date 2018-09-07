@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <fstream>
 
 using namespace std;
 
@@ -15,7 +16,7 @@ class V3 {
     float y;
     float z;
 
-    V3 operator+(const V3 &b) {
+    V3 operator+(V3 &b) {
       V3 res {
         .x = this->x + b.x,
           .y = this->y + b.y,
@@ -24,7 +25,7 @@ class V3 {
       return res;
     }
 
-    V3 operator*(const V3 &b) {
+    V3 operator*(V3 &b) {
       V3 res {
         .x = this->x * b.x,
           .y = this->y * b.y,
@@ -33,7 +34,7 @@ class V3 {
       return res;
     }
 
-    V3 operator-(const V3 &b) {
+    V3 operator-(V3 &b) {
       V3 res {
         .x = this->x - b.x,
           .y = this->y - b.y,
@@ -51,7 +52,7 @@ class V3 {
       return res;
     }
 
-    V3 operator/(const V3 &b) {
+    V3 operator/(V3 &b) {
       V3 res {
         .x = this->x / b.x,
           .y = this->y / b.y,
@@ -69,7 +70,7 @@ class V3 {
       return res;
     }
 
-    float dot(const V3 &b) {
+    float dot(V3 &b) {
       return  this->x * b.x +
         this->y * b.y +
         this->z * b.z;
@@ -95,7 +96,12 @@ class Ray {
     V3 direction;
 
     V3 point(float t) {
-      return this->origin + (this->direction * t);
+      V3 res = {
+        .x = this->origin.x + (this->direction.x * t),
+        .y = this->origin.y + (this->direction.y * t),
+        .z = this->origin.z + (this->direction.z * t)
+      };
+      return res;
     }
 };
 
@@ -107,13 +113,76 @@ class Camera {
     V3 lb;
 };
 
+class Hit {
+  public:
+    float dist;
+    V3 point;
+    V3 normal;
+};
+
 class Sphere {
   public:
     V3 center;
-    V3 color;
     float radius;
+    V3 color;
     bool is_light;
+
+    Hit hit(Ray &ray)
+    {
+      Hit hit = {.dist = 1e15};
+      V3 oc = ray.origin - this->center;
+      float a = ray.direction.dot(ray.direction);
+      float b = oc.dot(ray.direction);
+      float c = oc.dot(oc) - (this->radius * this->radius);
+      float dis = b * b - a * c;
+
+      if(dis > 0.0f)
+      {
+        float e = sqrt(dis);
+        float t = (-b - e) / a;
+
+        if(t > 0.007f)
+        {
+          hit.dist = t;
+          hit.point = ray.point(t);
+          hit.normal = (hit.point - this->center).unit();
+          return hit;
+        }
+
+        t = (-b + e) / a;
+        if(t > 0.007f)
+        {
+          hit.dist = t;
+          hit.point = ray.point(t);
+          hit.normal = (hit.point - this->center).unit();
+          return hit;
+        }
+      }
+
+      return hit;
+    }
 };
+
+float randf()
+{
+  return (float)rand() / (float)RAND_MAX;
+}
+
+V3 rnd_dome(V3 &normal)
+{
+  V3 p;
+  float d;
+  do
+  {
+    p.x = 2.0f * randf() - 1.0f;
+    p.y = 2.0f * randf() - 1.0f;
+    p.z = 2.0f * randf() - 1.0f;
+
+    d = p.unit().dot(normal);
+  } while(d <= 0);
+
+  return p;
+}
 
 class World {
   public:
@@ -166,25 +235,94 @@ class World {
       };
 
       this->camera = Camera {
-        eye = V3 {.x = 0.0f, .y = 4.5f, .z = 75.0f},
-        lt = V3 {.x = -8.0f, .y = 9.0f, .z = 50.f},
-        rt = V3 {.x = 8.0f, .y = 9.0f, .z = 50.0f},
-        lb = V3 {.x = -8.0f, .y = 0.0f, .z = 50.0f}
+        .eye = V3 {.x = 0.0f, .y = 4.5f, .z = 75.0f},
+        .lt = V3 {.x = -8.0f, .y = 9.0f, .z = 50.f},
+        .rt = V3 {.x = 8.0f, .y = 9.0f, .z = 50.0f},
+        .lb = V3 {.x = -8.0f, .y = 0.0f, .z = 50.0f}
       };
+    }
+
+    V3 trace(Ray &ray, uint_fast16_t depth)
+    {
+      V3 color = {0};
+      bool did_hit = false;
+      Hit hit = {.dist = 1e15};
+      Sphere sp;
+      for(auto sphere : this->spheres)
+      {
+        Hit res = sphere.hit(ray);
+        if(res.dist > 0.0001f && res.dist < hit.dist)
+        {
+          sp = sphere;
+          did_hit = true;
+          color = sp.color;
+          hit = res;
+        }
+      }
+
+      if(did_hit && depth < MAX_DEPTH)
+      {
+        if(!sp.is_light)
+        {
+          Ray nray = {
+            .origin = hit.point,
+            .direction = rnd_dome(hit.normal)
+          };
+          V3 ncolor = this->trace(nray, depth + 1);
+          float a = nray.direction.dot(hit.normal);
+          ncolor = ncolor * a;
+          color = color * ncolor;
+        }
+        else
+        {
+          color = sp.color;
+        }
+      }
+
+      if(!did_hit || depth >= MAX_DEPTH)
+      {
+        color = {0};
+      }
+
+      return color;
     }
 };
 
-int main() {
+
+void writeppm(vector<V3> data)
+{
+  ofstream ppm;
+  ppm.open("cpprb.ppm");
+  ppm<<"P3\n"<<WIDTH<<" "<<HEIGHT<<"\n255"<<endl;
+
+  for(uint_fast16_t y = 0; y < HEIGHT; ++y)
+  {
+    for(uint_fast16_t x = 0; x < WIDTH; ++x)
+    {
+      V3 p = data[y* WIDTH + x];
+      ppm
+        <<(uint_fast16_t)(p.x * 255.99f)<<" "
+        <<(uint_fast16_t)(p.y * 255.99f)<<" "
+        <<(uint_fast16_t)(p.z * 255.99f)<<" ";
+    }
+    ppm<<endl;
+  }
+  ppm.close();
+}
+
+int main()
+{
   World world;
+  vector<V3> data(WIDTH * HEIGHT);
   V3 vdu = (world.camera.rt - world.camera.lt) / (float) WIDTH;
-  V3 vdu = (world.camera.lb - world.camera.lt) / (float) HEIGHT;
+  V3 vdv = (world.camera.lb - world.camera.lt) / (float) HEIGHT;
 
   for(uint_fast16_t y = 0; y < HEIGHT; ++y)
   {
     for(uint_fast16_t x = 0; x < WIDTH; ++x)
     {
       Ray r = {
-        .origin = world.camera.lt
+        .origin = world.camera.eye
       };
 
       V3 u;
@@ -198,10 +336,12 @@ int main() {
         r.direction = ((world.camera.lt + u + v) - r.origin).unit();
         u = world.trace(r, 0);
         c = c + u;
-        
       }
+      data[y * WIDTH + x] = c / (float)SAMPLES;
     }
   }
+
+  writeppm(data);
 
   return 0;
 }
