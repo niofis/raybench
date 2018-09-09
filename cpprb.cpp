@@ -16,7 +16,7 @@ class V3 {
     float y;
     float z;
 
-    V3 operator+(V3 &b) {
+    const V3 operator+(const V3 &b) const {
       return V3 {
         .x = this->x + b.x,
           .y = this->y + b.y,
@@ -24,7 +24,7 @@ class V3 {
       };
     }
 
-    V3 operator*(V3 &b) {
+    const V3 operator*(const V3 &b) const {
       return V3 {
         .x = this->x * b.x,
           .y = this->y * b.y,
@@ -32,7 +32,7 @@ class V3 {
       };
     }
 
-    V3 operator-(V3 &b) {
+    const V3 operator-(const V3 &b) const {
       return V3 {
         .x = this->x - b.x,
           .y = this->y - b.y,
@@ -40,7 +40,7 @@ class V3 {
       };
     }
 
-    V3 operator*(float s) {
+    const V3 operator*(float s) const {
       return V3 {
         .x = this->x * s,
           .y = this->y * s,
@@ -48,7 +48,7 @@ class V3 {
       };
     }
 
-    V3 operator/(float s) {
+    const V3 operator/(float s) const {
       return V3 {
         .x = this->x / s,
           .y = this->y / s,
@@ -56,13 +56,13 @@ class V3 {
       };
     }
 
-    float dot(V3 &b) {
+    float dot(const V3 &b) const {
       return this->x * b.x +
         this->y * b.y +
         this->z * b.z;
     }
 
-    float norm() {
+    float norm() const {
       return sqrtf(
           this->x * this->x +
           this->y * this->y +
@@ -70,7 +70,7 @@ class V3 {
           );
     }
 
-    V3 unit() {
+    const V3 unit() const {
       float n = this->norm();
       return (*this) / n;
     }
@@ -81,7 +81,7 @@ class Ray {
     V3 origin;
     V3 direction;
 
-    V3 point(float t) {
+    const V3 point(float t) const {
       V3 tmp = this->direction * t;
       return this->origin + tmp;
     }
@@ -112,15 +112,15 @@ class Sphere {
     Hit hit(Ray &ray)
     {
       Hit hit = {0};
-      V3 oc = ray.origin - this->center;
-      float a = ray.direction.dot(ray.direction);
-      float b = oc.dot(ray.direction);
-      float c = oc.dot(oc) - (this->radius * this->radius);
-      float dis = b * b - a * c;
+      const V3 oc = ray.origin - this->center;
+      const float a = ray.direction.dot(ray.direction);
+      const float b = oc.dot(ray.direction);
+      const float c = oc.dot(oc) - (this->radius * this->radius);
+      const float dis = b * b - a * c;
 
       if(dis > 0.0f)
       {
-        float e = sqrtf(dis);
+        const float e = sqrtf(dis);
         float t = (-b - e) / a;
 
         if(t > 0.007f)
@@ -150,7 +150,7 @@ float randf()
   return (float)rand() / (float)RAND_MAX;
 }
 
-V3 rnd_dome(V3 &normal)
+const V3 rnd_dome(V3 &normal)
 {
   V3 p;
   float d;
@@ -224,7 +224,7 @@ class World {
       };
     }
 
-    V3 trace(Ray &ray, uint_fast16_t depth)
+    V3 trace(Ray &ray, uint_fast16_t depth) const
     {
       V3 color = {0};
       bool did_hit = false;
@@ -251,7 +251,7 @@ class World {
             .direction = rnd_dome(hit.normal)
           };
           V3 ncolor = this->trace(nray, depth + 1);
-          float a = nray.direction.dot(hit.normal);
+          const float a = nray.direction.dot(hit.normal);
           ncolor = ncolor * a;
           color = color * ncolor;
         }
@@ -294,10 +294,10 @@ void writeppm(vector<V3> data)
 
 int main()
 {
-  World world;
+  const World world;
   vector<V3> data(WIDTH * HEIGHT);
-  V3 vdu = (world.camera.rt - world.camera.lt) / (float) WIDTH;
-  V3 vdv = (world.camera.lb - world.camera.lt) / (float) HEIGHT;
+  const V3 vdu = (world.camera.rt - world.camera.lt) / (float) WIDTH;
+  const V3 vdv = (world.camera.lb - world.camera.lt) / (float) HEIGHT;
 
   for(uint_fast16_t y = 0; y < HEIGHT; ++y)
   {
