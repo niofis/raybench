@@ -109,9 +109,8 @@ class Sphere {
     V3 color;
     bool is_light;
 
-    Hit hit(Ray &ray)
+    const Hit hit(Ray &ray) const
     {
-      Hit hit = {0};
       const V3 oc = ray.origin - this->center;
       const float a = ray.direction.dot(ray.direction);
       const float b = oc.dot(ray.direction);
@@ -121,27 +120,31 @@ class Sphere {
       if(dis > 0.0f)
       {
         const float e = sqrtf(dis);
-        float t = (-b - e) / a;
+        const float t1 = (-b - e) / a;
 
-        if(t > 0.007f)
+        if(t1 > 0.007f)
         {
-          hit.dist = t;
-          hit.point = ray.point(t);
-          hit.normal = (hit.point - this->center).unit();
-          return hit;
+          const V3 point = ray.point(t1);
+          return Hit {
+            .dist = t1,
+            .point = point,
+            .normal = (point - this->center).unit()
+          };
         }
 
-        t = (-b + e) / a;
-        if(t > 0.007f)
+        const float t2 = (-b + e) / a;
+        if(t2 > 0.007f)
         {
-          hit.dist = t;
-          hit.point = ray.point(t);
-          hit.normal = (hit.point - this->center).unit();
-          return hit;
+          const V3 point = ray.point(t2);
+          return Hit {
+            .dist = t2,
+            .point = point,
+            .normal = (point - this->center).unit()
+          };
         }
       }
 
-      return hit;
+      return Hit {0};
     }
 };
 
