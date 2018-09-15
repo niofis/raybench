@@ -9,6 +9,11 @@ crb:
 cpprb:
 	g++ cpprb.cpp -o cpprb -O3 -lm -std=gnu++17
 
+.PHONY: cpprb_mt
+cpprb_mt:
+	g++ cpprb_mt.cpp -o cpprb_mt -O3 -lm -std=gnu++17
+
+
 .PHONY: crb_opt
 crb_opt:
 	gcc crb_opt.c -o crb_opt -std=c11 -O3 -lm -D_XOPEN_SOURCE=600 -march=native -fopt-info-vec-all -ffast-math

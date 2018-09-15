@@ -229,6 +229,11 @@ class World {
 
     V3 trace(Ray &ray, uint_fast16_t depth) const
     {
+      if(depth >= MAX_DEPTH)
+      {
+        return V3 {0};
+      }
+
       V3 color = {0};
       bool did_hit = false;
       Hit hit = {.dist = 1e15};
@@ -262,11 +267,6 @@ class World {
         {
           color = sp.color;
         }
-      }
-
-      if(!did_hit || depth >= MAX_DEPTH)
-      {
-        color = {0};
       }
 
       return color;
