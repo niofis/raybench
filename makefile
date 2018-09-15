@@ -11,7 +11,7 @@ cpprb:
 
 .PHONY: cpprb_mt
 cpprb_mt:
-	g++ cpprb_mt.cpp -o cpprb_mt -O3 -lm -std=gnu++17
+	g++ cpprb_mt.cpp -o cpprb_mt -O3 -lm -std=gnu++17 -fopenmp
 
 
 .PHONY: crb_opt

@@ -2,8 +2,7 @@
 #include <cmath>
 #include <vector>
 #include <numeric>
-#include <algorithm>
-#include <execution>
+#include <parallel/algorithm>
 #include <fstream>
 
 using namespace std;
@@ -308,7 +307,7 @@ int main()
   vector<int> pixels(WIDTH * HEIGHT);
   iota(pixels.begin(), pixels.end(), 0);
 
-  transform(std::execution::par_unseq, pixels.begin(), pixels.end(), data.begin(),
+  __gnu_parallel::transform(pixels.begin(), pixels.end(), data.begin(),
       [&world, &vdu, &vdv](int pixel) -> V3 {
       const int x = pixel % WIDTH;
       const int y = pixel / WIDTH;
