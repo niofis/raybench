@@ -2,7 +2,7 @@ extern crate rand;
 use std::ops;
 use std::io::{BufWriter, Write};
 use std::fs::File;
-use rand::Rng;
+use rand::{Rng, SeedableRng};
 
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 720;
@@ -260,12 +260,17 @@ impl World {
     }
 }
 
-fn write_ppm(data: &Vec<Vec<V3>>) {
+fn write_ppm(data: &Vec<V3>) {
     let mut ppm = BufWriter::new(File::create("rsrb_alt.ppm").expect("Error creating file"));
     write!(ppm, "P3\n{} {}\n255\n", WIDTH, HEIGHT);
-    for line in data {
-        for pixel in line {
-            write!(ppm, "{} {} {} ", (pixel.x * 255.99) as u8, (pixel.y * 255.99) as u8, (pixel.z * 255.99) as u8);
+
+    for y in 0..HEIGHT {
+        for x in 0..WIDTH {
+            let pixel = data[y * WIDTH + x];
+            write!(ppm, "{} {} {} ",
+                   (pixel.x * 255.99) as u8, 
+                   (pixel.y * 255.99) as u8, 
+                   (pixel.z * 255.99) as u8);
         }
         write!(ppm, "\n");
     }
@@ -275,29 +280,27 @@ fn main() {
     let world = World::new();
     let vdu = (world.camera.rt - world.camera.lt) / WIDTH as f32;
     let vdv = (world.camera.lb - world.camera.lt) / HEIGHT as f32;
-    let mut rng = rand::XorShiftRng::new_unseeded();
-    let mut data = vec![vec![V3 {x: 0., y: 0., z: 0.}; WIDTH]; HEIGHT];
 
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
-            let mut ray = Ray {
+    let data: Vec<V3> = (0..HEIGHT*WIDTH).map(|pixel| {
+        let x = pixel % WIDTH;
+        let y = pixel / WIDTH;
+
+        let mut rng = rand::XorShiftRng::from_seed([pixel as u32, x as u32, y as u32, 42]);
+
+        let color: V3 = (0..SAMPLES).map(|_| {
+            let ray = Ray {
                 origin: world.camera.eye,
-                direction: V3{ x: 0., y: 0., z: 0.},
+                direction: ((world.camera.lt +
+                             (vdu * (x as f32 + rng.gen::<f32>()) +
+                              vdv * (y as f32 + rng.gen::<f32>()))) -
+                            world.camera.eye)
+                    .unit(),
             };
-            let mut color = V3{ x: 0., y: 0., z: 0.};
 
-            for _ in 0..SAMPLES {
-                ray.direction = ((world.camera.lt +
-                                  (vdu * (x as f32 + rng.gen::<f32>()) +
-                                   vdv * (y as f32 + rng.gen::<f32>()))) -
-                                 world.camera.eye)
-                    .unit();
-                color = color + world.trace(&mut rng, &ray, 0);
-            }
+            world.trace(&mut rng, &ray, 0)
+        }).fold(V3 {x:0., y:0., z:0.}, |a, b| a + b);
 
-            data[y][x] = color / SAMPLES as f32;
-        }
-    }
-
+        color / SAMPLES as f32
+    }).collect();
     write_ppm(&data);
 }
