@@ -1,5 +1,8 @@
 extern crate rand;
 use std::ops;
+use std::io::{BufWriter, Write};
+use std::fs::File;
+use rand::Rng;
 
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 720;
@@ -37,6 +40,30 @@ impl ops::Sub<V3> for V3 {
     }
 }
 
+impl ops::Mul<V3> for V3 {
+    type Output = V3;
+
+    fn mul(self, rhs: V3) -> V3 { 
+        V3 {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+        }
+    }
+}
+
+impl ops::Mul<f32> for V3 {
+    type Output = V3;
+
+    fn mul(self, rhs: f32) -> V3 { 
+        V3 {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+        }
+    } 
+}
+
 impl ops::Div<f32> for V3 {
     type Output = V3;
 
@@ -52,14 +79,15 @@ impl ops::Div<f32> for V3 {
 impl V3 {
     fn dot(&self, rhs: &V3) -> f32 { self.x * rhs.x + self.y * rhs.y + self.z * rhs.z } 
     fn norm(&self) -> f32 { self.dot(self).sqrt() }
-    fn unit(self) -> V3 { self / self.norm() }
-    fn random_dome<R: Rng>(rng: &mut R, normal: V3) -> V3 {
-        rng.gen_iter::<(f32, f32, f32)>()
-            .map(|(x, y, z)| (V3 {x: x * 2. - 1., y: y * 2. - 1., z: z * 2. - 1.}).unit())
-            .filter(|v| v.dot(&normal) >= 0.)
-            .next()
-            .unwrap()
-    }
+    fn unit(self) -> V3 { self / self.norm() }    
+}
+
+fn random_dome<R: Rng>(rng: &mut R, normal: V3) -> V3 {
+    rng.gen_iter::<(f32, f32, f32)>()
+        .map(|(x, y, z)| (V3 {x: x * 2. - 1., y: y * 2. - 1., z: z * 2. - 1.}).unit())
+        .filter(|v| v.dot(&normal) >= 0.)
+        .next()
+        .unwrap()
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -123,9 +151,9 @@ impl Sphere {
             }
 
             let t = (-b + e) / a;
-            let t > 0.007 {
+            if t > 0.007 {
                 let pt = ray.point(t);
-                let n = (pt - self.center).unit(),
+                let n = (pt - self.center).unit();
                 return Some(Hit {
                     dist: t,
                     point: pt,
@@ -232,8 +260,9 @@ impl World {
     }
 }
 
-fn write_ppm(data: Vec<Vec<V3>>) {
+fn write_ppm(data: &Vec<Vec<V3>>) {
     let mut ppm = BufWriter::new(File::create("rsrb_alt.ppm").expect("Error creating file"));
+    write!(ppm, "P3\n{} {}\n255\n", WIDTH, HEIGHT);
     for line in data {
         for pixel in line {
             write!(ppm, "{} {} {} ", (pixel.x * 255.99) as u8, (pixel.y * 255.99) as u8, (pixel.z * 255.99) as u8);
