@@ -264,13 +264,14 @@ function trace (world, ray, depth) {
 function writeppm (data) {
   var ppm = fs.openSync('jsrb.ppm', 'w');
   
-  fs.write(ppm, `P3\n${WIDTH} ${HEIGHT}\n255\n`);
+  fs.writeSync(ppm, `P3\n${WIDTH} ${HEIGHT}\n255\n`);
 
   for (let y = 0; y < HEIGHT; ++y) {
     for (let x = 0; x < WIDTH; ++x) {
-      let r = Math.floor(data[y][x].x * 255.99);
-      let g = Math.floor(data[y][x].y * 255.99);
-      let b = Math.floor(data[y][x].z * 255.99);
+      const pixel = data[x + y*HEIGHT];
+      let r = Math.floor(pixel.x * 255.99);
+      let g = Math.floor(pixel.y * 255.99);
+      let b = Math.floor(pixel.z * 255.99);
       fs.writeSync(ppm, `${r} ${g} ${b} `);
     }
     fs.writeSync(ppm, '\n');
@@ -280,34 +281,31 @@ function writeppm (data) {
 
 (() => {
   
-  let data = [];
   let world = new World();
-  let vdu = (world.camera.rt.sub(world.camera.lt)).div(WIDTH);
-  let vdv = (world.camera.lb.sub(world.camera.lt)).div(HEIGHT);
-  
-  for(let y = 0; y < HEIGHT; ++y) {
-    data[y] = [];
-    for(let x = 0; x < WIDTH; ++x) {
-      let color = new Vector3();
-      let ray = new Ray();
+  const vdu = (world.camera.rt.sub(world.camera.lt)).div(WIDTH);
+  const vdv = (world.camera.lb.sub(world.camera.lt)).div(HEIGHT);
 
-      ray.origin = world.camera.eye;
+  const data = [...Array(WIDTH*HEIGHT).keys()]
+    .map(pixel => {
+      const x = pixel % WIDTH;
+      const y = Math.floor(pixel / WIDTH);
 
-      for(let i = 0; i < SAMPLES; ++i) {
-        ray.direction = world.camera.lt.add(
+      const color = [...Array(WIDTH * HEIGHT).keys()]
+        .map(() => {
+          const ray = new Ray();
+          ray.origin = world.camera.eye;
+          ray.direction = world.camera.lt.add(
           vdu.mul(x + Math.random()).add(
             vdv.mul(y + Math.random())));
 
-        ray.direction = ray.direction.sub(ray.origin);
-        ray.direction = ray.direction.unit();
-        color = color.add(trace(world, ray, 0));
-      }
+          ray.direction = ray.direction.sub(ray.origin);
+          ray.direction = ray.direction.unit();
 
-      color = color.div(SAMPLES);
-
-      data[y][x] = color;
-    }
-  }
+          return trace(world, ray, 0);
+        }).reduce((acc, c) => acc.add(c), new Vector3());
+      
+      return color.div(SAMPLES);
+    });
 
   writeppm(data);
 })()
