@@ -290,7 +290,7 @@ function writeppm (data) {
       const x = pixel % WIDTH;
       const y = Math.floor(pixel / WIDTH);
 
-      const color = [...Array(WIDTH * HEIGHT).keys()]
+      const color = [...Array(SAMPLES).keys()]
         .map(() => {
           const ray = new Ray();
           ray.origin = world.camera.eye;
