@@ -8,7 +8,7 @@ use rayon::prelude::*;
 
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 720;
-const SAMPLES: u32 = 50;
+const SAMPLES: u32 = 500;
 const MAXDEPTH: u32 = 5;
 
 #[derive(Copy, Clone, Debug)]
@@ -263,7 +263,7 @@ impl World {
 }
 
 fn write_ppm(data: &Vec<V3>) {
-    let mut ppm = BufWriter::new(File::create("rsrb_alt.ppm").expect("Error creating file"));
+    let mut ppm = BufWriter::new(File::create("rsrb_alt_mt.ppm").expect("Error creating file"));
     write!(ppm, "P3\n{} {}\n255\n", WIDTH, HEIGHT);
 
     for y in 0..HEIGHT {

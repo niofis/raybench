@@ -5,6 +5,8 @@ const HEIGHT = 720;
 const SAMPLES = 50;
 const MAX_DEPTH = 5;
 
+const range = (count) => [...Array(count).keys()];
+
 class Vector3 {
   constructor (x, y, z) {
     this.x = x || 0;
@@ -75,6 +77,8 @@ class Vector3 {
   }
 }
 
+const nocolor = new Vector3();
+
 class Ray {
   constructor (origin, direction) {
     this.origin = origin || new Vector3();
@@ -93,6 +97,7 @@ class Hit {
     this.normal = normal || new Vector3();
   }
 }
+const nohit = new Hit(1e15);
 
 class Camera {
   constructor (eye, lt, rt, lb) {
@@ -150,59 +155,81 @@ class Sphere {
   }
 }
 
+const spheresHits = (spheres, ray) => {
+  const indexes = range(spheres.count);
+  const a = ray.direction.dot(ray.direction);
+
+  return indexes.map(i => {
+    const ocx = ray.origin.x - spheres.center.x[i];
+    const ocy = ray.origin.y - spheres.center.y[i];
+    const ocz = ray.origin.z - spheres.center.z[i];
+
+    const b = ocx * ray.direction.x +
+              ocy * ray.direction.y + 
+              ocz * ray.direction.z;
+    const c = (ocx * ocx + ocy * ocy + ocz * ocz) - spheres.radius[i] * spheres.radius[i];
+    const dis = b * b - a * c;
+
+    if (dis <= 0) return nohit;
+
+    const e = Math.sqrt(dis);
+
+    const t = (-b - e) / a;
+    if (t > 0.007) {
+      let hit = new Hit();
+      hit.dist = t;
+      hit.point = ray.point(t);
+      hit.normal = (new Vector3(hit.point.x - spheres.center.x[i],
+        hit.point.y - spheres.center.y[i],
+        hit.point.z - spheres.center.z[i])).unit();
+      hit.index = i;
+
+      return hit;
+    }
+
+    const t2 = (-b + e) / a;
+    if (t2 > 0.007) {
+      let hit = new Hit();
+      hit.dist = t2;
+      hit.point = ray.point(t2);
+      hit.normal = (new Vector3(hit.point.x - spheres.center.x[i],
+        hit.point.y - spheres.center.y[i],
+        hit.point.z - spheres.center.z[i])).unit();
+      hit.index = i;
+
+      return hit;
+    }
+
+    return nohit;
+  });
+}
+
+
+
 class World {
   constructor() {
     this.camera = new Camera();
-    this.spheres = [];
-
-    this.spheres.push(new Sphere(
-      new Vector3(0, -10002, 0),
-      9999,
-      new Vector3(1, 1, 1),
-      false));
-
-    this.spheres.push(new Sphere(
-      new Vector3(-10012, 0, 0),
-      9999,
-      new Vector3(1, 0, 0),
-      false));
-
-    this.spheres.push(new Sphere(
-      new Vector3(10012, 0, 0),
-      9999,
-      new Vector3(0, 1, 0),
-      false));
-
-    this.spheres.push(new Sphere(
-      new Vector3(0, 0, -10012),
-      9999,
-      new Vector3(1, 1, 1),
-      false));
-
-    this.spheres.push(new Sphere(
-      new Vector3(0, 10012, 0),
-      9999,
-      new Vector3(1, 1, 1),
-      true));
-
-    this.spheres.push(new Sphere(
-      new Vector3(-5, 0, 2),
-      2,
-      new Vector3(1, 1, 0),
-      false));
-
-    this.spheres.push(new Sphere(
-      new Vector3(0, 5, -1),
-      4,
-      new Vector3(1, 0, 0),
-      false));
-
-    this.spheres.push(new Sphere(
-      new Vector3(8, 5, -1),
-      2,
-      new Vector3(0, 0, 1),
-      false));
-
+    
+    this.spheres = {
+      count: 8,
+      center: {
+        x: [     0,  -10012, 10012,      0,     0, -5,  0,  8],
+        y: [-10002,       0,     0,      0, 10012,  0,  5,  5],
+        z: [     0,       0,     0, -10002,     0,  2, -1, -1]
+      },
+      radius: [9999, 9999, 9999, 9999, 9999, 2, 4, 2],
+      color: [
+        new Vector3(1,1,1),
+        new Vector3(1,0,0),
+        new Vector3(0,1,0),
+        new Vector3(1,1,1),
+        new Vector3(1,1,1),
+        new Vector3(1,1,0),
+        new Vector3(1,0,0),
+        new Vector3(0,0,1)
+      ],
+      is_light: [false, false, false, false, true, false, false, false]
+    };
   }
 }
 
@@ -224,45 +251,26 @@ function rnd_dome (normal) {
 }
 
 function trace (world, ray, depth) {
-  let color = new Vector3();
-  let did_hit = false;
-  let hit = new Hit(1e15);
-  let sp;
+  if (depth >= MAX_DEPTH) return nocolor;
 
-  world.spheres.forEach((s) => {
-    let lh = s.hit(ray);
+  const hits = spheresHits(world.spheres, ray);
+  const hit = hits.reduce((prev, next) => prev.dist < next.dist ? prev : next, nohit);
 
-    if (lh && lh.dist > 0.0001 && lh.dist < hit.dist) {
-      sp = s;
-      did_hit = true;
-      color = s.color;
-      hit = lh;
-    }
-  });
+  if (hit === nohit) return nocolor;
+  if (world.spheres.is_light[hit.index]) return world.spheres.color[hit.index];
+  let nray = new Ray(
+    hit.point,
+    rnd_dome(hit.normal));
 
-  if (did_hit && depth < MAX_DEPTH) {
-    if (sp.is_light != true) {
-      let nray = new Ray(
-          hit.point,
-          rnd_dome(hit.normal));
+  let ncolor = trace(world, nray, depth + 1);
+  let at = nray.direction.dot(hit.normal);
 
-      let ncolor = trace(world, nray, depth + 1);
-      let at = nray.direction.dot(hit.normal);
-
-      color = color.mul(ncolor.mul(at));
-    }
-  }
-
-  if (did_hit == false || depth >= MAX_DEPTH) {
-    color = new Vector3();
-  }
-
-  return color;
+  return world.spheres.color[hit.index].mul(ncolor.mul(at));
 }
 
 
 function writeppm (data) {
-  var ppm = fs.openSync('jsrb.ppm', 'w');
+  var ppm = fs.openSync('jsrb_dod.ppm', 'w');
   
   fs.writeSync(ppm, `P3\n${WIDTH} ${HEIGHT}\n255\n`);
 
@@ -285,14 +293,16 @@ function writeppm (data) {
   const vdu = (world.camera.rt.sub(world.camera.lt)).div(WIDTH);
   const vdv = (world.camera.lb.sub(world.camera.lt)).div(HEIGHT);
 
-  const data = [...Array(WIDTH*HEIGHT).keys()]
+  const samples = range(SAMPLES);
+
+  const data = range(WIDTH*HEIGHT)
     .map(pixel => {
       const x = pixel % WIDTH;
       const y = Math.floor(pixel / WIDTH);
 
-      const color = [...Array(SAMPLES).keys()]
+      const color = samples
         .map(() => {
-          let ray = new Ray();
+          const ray = new Ray();
           ray.origin = world.camera.eye;
           ray.direction = world.camera.lt.add(
           vdu.mul(x + Math.random()).add(
@@ -301,7 +311,7 @@ function writeppm (data) {
           ray.direction = ray.direction.sub(ray.origin).unit();
 
           return trace(world, ray, 0);
-        }).reduce((acc, c) => acc.add(c), new Vector3());
+        }).reduce((acc, c) => acc.add(c), nocolor);
       
       return color.div(SAMPLES);
     });
