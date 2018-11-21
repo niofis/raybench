@@ -8,7 +8,7 @@ use rayon::prelude::*;
 
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 720;
-const SAMPLES: u32 = 500;
+const SAMPLES: u32 = 50;
 const MAXDEPTH: u32 = 5;
 
 #[derive(Copy, Clone, Debug)]
