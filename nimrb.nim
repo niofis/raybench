@@ -89,7 +89,7 @@ proc sphit(sp: Sphere, ray: Ray): Hit =
 
   nohit
 
-proc rnd2(): float32 = (2.0 * random(1.0)) - 1.0
+proc rnd2(): float32 = (2.0 * rand(1.0)) - 1.0
 
 proc rnd_dome(normal: V3): V3 =
   var d:float32
@@ -157,8 +157,8 @@ proc main() =
       ray.origin = world.camera.eye
 
       for i in 1..SAMPLES:
-        ray.direction = ((world.camera.lt + (vdu * (x.float32 + random(1.0)) +
-                        vdv * (y.float32 + random(1.0)))) -
+        ray.direction = ((world.camera.lt + (vdu * (x.float32 + rand(1.0)) +
+                        vdv * (y.float32 + rand(1.0)))) -
                         world.camera.eye).unit
         color = color + trace(world, ray, 0)
 
