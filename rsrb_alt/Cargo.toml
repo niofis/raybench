@@ -1,0 +1,8 @@
+[package]
+name = "rsrb_alt"
+version = "0.1.0"
+authors = ["Enrique <niofis@gmail.com>"]
+
+[dependencies]
+rand = "0.3.14"
+
