@@ -7,7 +7,7 @@ samples = 50::Int
 max_depth = 5::Int
 
 world = World {
-      camera =  Camera (Vector3 0 4.5 75) (Vector3 (-8) 9 50) (Vector3 8 9 50) (Vector3 (-8) 0 50), 
+      camera =  Camera (Vector3 0 4.5 75) (Vector3 (-8) 9 50) (Vector3 8 9 50) (Vector3 (-8) 0 50),
       spheres = [
         Sphere {center = Vector3 0 (-10002) 0, --Floor
                 radius = 9999,
@@ -44,7 +44,7 @@ world = World {
       ]}
 
 
-data Vector3 = Vector3 {vx::Float, vy::Float, vz::Float} deriving (Show)
+data Vector3 = Vector3 {vx :: !Float, vy :: !Float, vz :: !Float} deriving (Show)
 vadd (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = Vector3 (x1+x2) (y1+y2) (z1+z2)
 vsub (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = Vector3 (x1-x2) (y1-y2) (z1-z2)
 vmul (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = Vector3 (x1*x2) (y1*y2) (z1*z2)
@@ -55,11 +55,11 @@ vdot (Vector3 x1 y1 z1) (Vector3 x2 y2 z2) = (x1*x2) + (y1*y2) + (z1*z2)
 vnorm (Vector3 x1 y1 z1) = sqrt ((x1*x1) + (y1*y1) + (z1*z1))
 vunit v1 = v1 `vdivS` (vnorm v1)
 
-data Ray = Ray {origin :: Vector3, direction :: Vector3} deriving (Show)
-data Camera = Camera {eye :: Vector3, lt :: Vector3, rt :: Vector3, lb :: Vector3} deriving (Show)
-data Pixel = Pixel Float Float deriving (Show)
-data Sphere = Sphere {center :: Vector3, radius :: Float, color :: Vector3, isLight :: Bool} deriving (Show)
-data Hit = Hit {distance :: Float, point :: Vector3, normal :: Vector3, hitcolor :: Vector3, sphere :: Sphere} deriving (Show)
+data Ray = Ray {origin :: !Vector3, direction :: !Vector3} deriving (Show)
+data Camera = Camera {eye :: !Vector3, lt :: !Vector3, rt :: !Vector3, lb :: !Vector3} deriving (Show)
+data Pixel = Pixel !Float !Float deriving (Show)
+data Sphere = Sphere {center :: !Vector3, radius :: !Float, color :: !Vector3, isLight :: !Bool} deriving (Show)
+data Hit = Hit {distance :: !Float, point :: !Vector3, normal :: !Vector3, hitcolor :: !Vector3, sphere :: !Sphere} deriving (Show)
 data World = World {camera :: Camera, spheres :: [Sphere]} deriving (Show)
 
 emptyHit = Hit 0 (Vector3 0 0 0) (Vector3 0 0 0) (Vector3 0 0 0) (Sphere (Vector3 0 0 0) 0 (Vector3 0 0 0) False)
@@ -76,7 +76,7 @@ sphereHit sphere ray =
       b = oc `vdot` (direction ray)
       c = (oc `vdot`oc) - (radius sphere) * (radius sphere)
       disc = (b * b) - (a * c)
-   in if disc <= 0 
+   in if disc <= 0
          then Nothing
          else let e = sqrt disc
                in let t1 = ((-b) - e) / a
@@ -104,7 +104,7 @@ primRays (Camera eye lt rt lb) pixels' =
       vdv = (lb `vsub` lt) `vdivS` height
       toRay (Pixel x y) =
         let rnd = rndsP (floor (y*width + x))
-         in map (\n -> Ray eye (vunit 
+         in map (\n -> Ray eye (vunit
                 (vsub (lt `vadd` ((vdu `vmulS` (x + (head (drop n rnd))) ) `vadd` (vdv `vmulS` (y + (head (drop (n+1) rnd))) ))) eye))) [1..samples]
    in
     map (\line -> map toRay line) pixels'
@@ -150,9 +150,9 @@ traceRay :: Int -> [Sphere] -> Ray -> Maybe Hit
 traceRay depth spheres ray = mapHit $ closestHit (map (\s -> sphereHit s ray) spheres)
   where
     mapHit Nothing = Nothing
-    mapHit (Just hit) = 
+    mapHit (Just hit) =
          if depth >= max_depth
-                then Nothing 
+                then Nothing
                 else if (isLight $ sphere hit) == True
                       then Just hit
                       else let nray = Ray (point hit) (rndDome (rndsD (floor $ (vnorm $ point hit) * 1928374)) (normal hit))
@@ -163,7 +163,7 @@ traceRay depth spheres ray = mapHit $ closestHit (map (\s -> sphereHit s ray) sp
 
 
 traceLine :: [Sphere] -> [[Ray]] -> [[Maybe Hit]]
-traceLine spheres rayPkg = 
+traceLine spheres rayPkg =
   map (\rays -> map (traceRay 0 spheres) rays) rayPkg
 
 
@@ -174,16 +174,16 @@ getMHitColor (Just (Hit _ _ _ clr _)) = clr
 avgHitsColor :: [Maybe Hit] -> Vector3
 avgHitsColor hits = (foldr addColor (Vector3 0 0 0) hits) `vdivS` (fromIntegral samples :: Float)
   where
-    addColor (Just (Hit _ _ _ clr _)) acc = clr `vadd` acc 
+    addColor (Just (Hit _ _ _ clr _)) acc = clr `vadd` acc
 
 render :: World -> [[Vector3]]
-render (World camera spheres) = 
-  let pixels' = pixels width height 
+render (World camera spheres) =
+  let pixels' = pixels width height
       rays = primRays camera pixels'
       hits = map (traceLine spheres) rays
    in
     map (\line -> map (\hits -> avgHitsColor hits) line) hits
-        
-           
+
+
 main = do
   writePPM $ render world
