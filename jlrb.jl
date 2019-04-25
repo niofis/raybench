@@ -1,4 +1,5 @@
 import Base.+, Base.-, Base.*, Base./
+using Printf
 
 const COEFF = 80
 const WIDTH = 16 * COEFF
@@ -6,7 +7,7 @@ const HEIGHT = 9 * COEFF
 const SAMPLES = 50
 const MAX_DEPTH = 5
 
-immutable Vec3
+struct Vec3
 	x::Float32
 	y::Float32
 	z::Float32
@@ -24,28 +25,28 @@ dot(x::Vec3, y::Vec3) = x.x * y.x + x.y * y.y + x.z * y.z
 norm(x::Vec3) = sqrt(dot(x, x))
 mkunit(x::Vec3) = x / norm(x)
 
-immutable Ray
+struct Ray
 	origin::Vec3
 	direction::Vec3
 end
 
 ray_point(r::Ray, t::Float32) = r.origin + t * r.direction
 
-type Camera
+mutable struct Camera
 	eye::Vec3
 	lt::Vec3
 	rt::Vec3
 	lb::Vec3
 end
 
-type Sphere
+mutable struct Sphere
 	center::Vec3
 	radius::Float32
 	color::Vec3
 	is_light::Bool
 end
 
-type World
+mutable struct World
 	spheres::Array{Sphere, 1}
 	camera::Camera
 end
@@ -64,7 +65,7 @@ function rnd_dome(normal::Vec3)
 	return p
 end
 
-immutable Hit
+struct Hit
 	dist::Float32
 	point::Vec3
 	normal::Vec3
@@ -80,17 +81,17 @@ function hit_sphere(sp::Sphere, ray::Ray)
 	c = dot(oc, oc) - (sp.radius * sp.radius)
 	dis = b * b - a * c
 
-	if dis > 0f0 then
+	if dis > 0f0
 		e = sqrt(dis)
 
 		t = (-b - e) / a
-		if t > 0.007f0 then
+		if t > 0.007f0
 			pt = ray_point(ray, t)
 			return Hit(t, pt, mkunit(pt - sp.center))
 		end
 
 		t = (-b + e) / a
-		if t > 0.007f0 then
+		if t > 0.007f0
 			pt = ray_point(ray, t)
 			return Hit(t, pt, mkunit(pt - sp.center))
 		end
@@ -100,7 +101,7 @@ function hit_sphere(sp::Sphere, ray::Ray)
 end
 
 function trace(world::World, r::Ray, depth)
-	if depth >= MAX_DEPTH then
+	if depth >= MAX_DEPTH
 		return ZERO3
 	end
 
@@ -109,17 +110,17 @@ function trace(world::World, r::Ray, depth)
 	sp = world.spheres[1]
 	for sphere in world.spheres
 		res = hit_sphere(sphere, r)
-		if res.dist > 0.0001f0 && res.dist < fhit.dist then
+		if res.dist > 0.0001f0 && res.dist < fhit.dist
 			sp = sphere
 			fhit = res
 		end
 	end
 
-	if fhit.dist == MAX_HIT.dist then
+	if fhit.dist == MAX_HIT.dist
 		return ZERO3
 	end
 
-	if sp.is_light then
+	if sp.is_light
 		return sp.color
 	end
 
@@ -192,4 +193,3 @@ function main()
 end
 
 @time main()
-
