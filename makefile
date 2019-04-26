@@ -1,9 +1,13 @@
 #gcc -Ofast -std=c11 -lm -o crb crb.c -D_XOPEN_SOURCE=600 -march=native -fomit-frame-pointer
-all: crb crb-dbl crb-omp ocamlrb hsrb gorb nimrb nimrb_dbl asmrb crrb javarb
+all: crb crb-vec crb-dbl crb-omp ocamlrb hsrb gorb nimrb nimrb_dbl asmrb crrb javarb
 
 .PHONY: crb
 crb:
 	gcc crb.c -o crb -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
+
+.PHONY: crb-vec
+crb-vec:
+	gcc crb-vec.c -o crb-vec -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
 
 .PHONY: cpprb
 cpprb:

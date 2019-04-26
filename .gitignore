@@ -38,6 +38,7 @@ ocamlrb
 ocamlrb.cmi
 ocamlrb.cmx
 crb
+crb-vec
 *.ppm
 csrb.exe.mdb
 *.beam
