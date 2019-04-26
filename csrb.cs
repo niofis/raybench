@@ -1,90 +1,29 @@
 using System;
+using System.Numerics;
 
-class Vector3 {
-
-  public float x;
-  public float y;
-  public float z;
-
-  public Vector3 () {
-    this.x = 0;
-    this.y = 0;
-    this.z = 0;
-  }
-
-  public Vector3 (float x, float y, float z) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-  }
-
-  public Vector3 Add (Vector3 v) {
-    return new Vector3 (
-        this.x + v.x,
-        this.y + v.y,
-        this.z + v.z
-        );
-  }
-
-  public Vector3 Sub (Vector3 v) {
-    return new Vector3 (
-        this.x - v.x,
-        this.y - v.y,
-        this.z - v.z
-        );
-  }
-
-  public Vector3 Mul (float v) {
-    return new Vector3(
-        this.x * v,
-        this.y * v,
-        this.z * v
-        );
-  }
-
-  public Vector3 Mul (Vector3 v) {
-    return new Vector3(
-        this.x * v.x,
-        this.y * v.y,
-        this.z * v.z
-        );
-  }
-
-  public Vector3 Div (float v) {
-    return new Vector3(
-        this.x / v,
-        this.y / v,
-        this.z / v
-        );
-  }
-
-  public Vector3 Div (Vector3 v) {
-    return new Vector3(
-        this.x / v.x,
-        this.y / v.y,
-        this.z / v.z
-        );
-  }
-
-  public float Dot (Vector3 v) {
-    return this.x * v.x + this.y * v.y + this.z * v.z;
-  }
-
-  public float Norm () {
-    return (float) Math.Sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
-  }
-
-  public Vector3 Unit () {
-    return this.Div(this.Norm());
+static class Vector3Extensions {
+  public static Vector3 Unit(this Vector3 v) {
+    return v / v.Length();
   }
 }
 
-class Ray {
+//https://codingforspeed.com/using-faster-psudo-random-generator-xorshift/
+static class Random {
+  static uint x = 123456789;
+  static uint y = 362436069;
+  static uint z = 521288629;
+  static uint w = 88675123;
+  
+  public static float NextFloat() {
+    uint t = x ^ (x << 11);
+    x = y; y = z; z = w;
+    return (w = w ^ (w >> 19) ^ (t ^ (t >> 8))) / (float)uint.MaxValue;
+  }
+}
+
+struct Ray {
   public Vector3 origin;
   public Vector3 direction;
-
-  public Ray () {
-  }
 
   public Ray (Vector3 origin, Vector3 direction) {
     this.origin = origin;
@@ -92,19 +31,19 @@ class Ray {
   }
 
   public Vector3 Point (float dist) {
-    return this.origin.Add(this.direction.Mul(dist));
+    return origin + direction * dist;
   }
 }
 
-class Hit {
-  public float dist;
+struct Hit {
   public Vector3 point;
   public Vector3 normal;
+  public float dist;
 
-  public Hit () {
-    this.dist = 0;
-    this.point = new Vector3();
-    this.normal = new Vector3();
+  public Hit (float dist) {
+    this.dist = dist;
+    point = default;
+    normal = default;
   }
 
   public Hit (float dist, Vector3 point, Vector3 normal) {
@@ -121,25 +60,18 @@ class Camera {
   public Vector3 lb;
 
   public Camera () {
-    this.eye = new Vector3(0.0f, 4.5f, 75.0f);
-    this.lt = new Vector3(-8, 9, 50);
-    this.rt = new Vector3(8, 9, 50);
-    this.lb = new Vector3(-8, 0, 50);
+    eye = new Vector3(0.0f, 4.5f, 75.0f);
+    lt = new Vector3(-8, 9, 50);
+    rt = new Vector3(8, 9, 50);
+    lb = new Vector3(-8, 0, 50);
   }
 }
 
-class Sphere {
+struct Sphere {
   public Vector3 center;
   public float radius;
   public Vector3 color;
   public bool is_light;
-
-  public Sphere () {
-    this.center = new Vector3();
-    this.radius = 1;
-    this.color = new Vector3(1,0,0);
-    this.is_light = false;
-  }
 
   public Sphere (Vector3 center, float radius, Vector3 color, bool is_light) {
     this.center = center;
@@ -149,10 +81,10 @@ class Sphere {
   }
 
   public Hit Hit (Ray ray) {
-    var oc = ray.origin.Sub(this.center);
-    float a = ray.direction.Dot(ray.direction);
-    float b = oc.Dot(ray.direction);
-    float c = oc.Dot(oc) - this.radius * this.radius;
+    var oc = ray.origin - center;
+    float a = Vector3.Dot(ray.direction, ray.direction);
+    float b = Vector3.Dot(oc, ray.direction);
+    float c = Vector3.Dot(oc, oc) - radius * radius;
     float dis = b * b - a * c;
 
     if (dis > 0) {
@@ -160,30 +92,20 @@ class Sphere {
 
       float t = (-b - e) / a;
       if (t > 0.007f) {
-        var hit = new Hit();
-
-        hit.dist = t;
-        hit.point = ray.Point(t);
-        hit.normal = hit.point.Sub(this.center).Unit();
-
-        return hit;
+        var point = ray.Point(t);
+        return new Hit(t, point, (point - center).Unit());
       }
 
       t = (-b + e) / a;
       if (t > 0.007f) {
-        var hit = new Hit();
-
-        hit.dist = t;
-        hit.point = ray.Point(t);
-        hit.normal = hit.point.Sub(this.center).Unit();
-
-        return hit;
+        var point = ray.Point(t);
+        return new Hit(t, point, (point - center).Unit());
       }
 
-      return null;
+      return default;
     }
 
-    return null;
+    return default;
   }
 }
 
@@ -194,36 +116,34 @@ class RayBench{
   public const int SAMPLES = 50;
   public const int MAX_DEPTH = 5;
   public static Sphere[] spheres = new Sphere[8];
-  public static Random rnd = new Random();
 
-  public static Vector3 rnd_dome (Vector3 normal) {
-    var p = new Vector3();
+  public static Vector3 RandomDome(Vector3 normal) {
+    Vector3 p;
     float d;
 
     do {
-      p.x = (float)(2.0 * rnd.NextDouble() - 1.0);
-      p.y = (float)(2.0 * rnd.NextDouble() - 1.0);
-      p.z = (float)(2.0 * rnd.NextDouble() - 1.0);
+      p = new Vector3(
+        (float)(2.0 * Random.NextFloat() - 1.0),
+        (float)(2.0 * Random.NextFloat() - 1.0),
+        (float)(2.0 * Random.NextFloat() - 1.0));
 
       p = p.Unit();
-      d = p.Dot(normal);
+      d = Vector3.Dot(p, normal);
     } while (d < 0);
 
     return p;
   }
 
-  public static Vector3 trace(Ray ray, int depth) {
-    var color = new Vector3();
+  public static Vector3 Trace(Ray ray, int depth) {
+    Vector3 color = default;
     bool did_hit = false;
-    var hit = new Hit();
-    Sphere sp = null;
-
-    hit.dist = 1e15f;
+    var hit = new Hit(1e15f);
+    Sphere sp = default;
 
     foreach(var s in spheres) {
       var lh = s.Hit(ray);
 
-      if (lh !=null && lh.dist > 0.0001f && lh.dist < hit.dist) {
+      if (lh.dist > 0.0001f && lh.dist < hit.dist) {
         sp = s;
         did_hit = true;
         color = s.color;
@@ -235,17 +155,17 @@ class RayBench{
       if (sp.is_light != true) {
         var nray = new Ray(
             hit.point,
-            RayBench.rnd_dome(hit.normal)
+            RandomDome(hit.normal)
             );
-        var ncolor = RayBench.trace(nray, depth + 1);
-        var at = nray.direction.Dot(hit.normal);
+        var ncolor = Trace(nray, depth + 1);
+        var at = Vector3.Dot(nray.direction, hit.normal);
 
-        color = color.Mul(ncolor.Mul(at));
+        color *= ncolor * at;
       }
     }
 
     if (did_hit == false || depth >= MAX_DEPTH) {
-      color = new Vector3();
+      color = default;
     }
 
     return color;
@@ -253,101 +173,100 @@ class RayBench{
 
   public static void WritePPM (Vector3[][] data) {
     using (var ppm = new System.IO.StreamWriter("csrb.ppm")) {
-      ppm.Write(String.Format("P3\n{0} {1}\n255\n", RayBench.WIDTH, RayBench.HEIGHT));
+      ppm.Write($"P3\n{WIDTH} {HEIGHT}\n255\n");
 
-      for(int y = 0; y < HEIGHT; ++y) {
-        for(int x = 0; x < WIDTH; ++x) {
-          int r = (int) Math.Floor(data[y][x].x * 255.99);
-          int g = (int) Math.Floor(data[y][x].y * 255.99);
-          int b = (int) Math.Floor(data[y][x].z * 255.99);
-          ppm.Write(String.Format("{0} {1} {2} ", r, g, b));
+      for(int y = 0; y < data.Length; y++) {
+        var dataY = data[y];
+        for (int x = 0; x < dataY.Length; x++) {
+          var vec = dataY[x] * 255.99f;
+          int r = (int) Math.Floor(vec.X);
+          int g = (int) Math.Floor(vec.Y);
+          int b = (int) Math.Floor(vec.Z);
+          ppm.Write($"{r} {g} {b} ");
         }
         ppm.Write("\n");
       }
-
-      ppm.Close();
     }
   }
 
-  public static void Main (String[] args) {
+  public static void Main (string[] args) {
 
-    spheres[0] = (new Sphere(
+    spheres[0] = new Sphere(
           new Vector3(0, -10002, 0),
           9999,
           new Vector3(1, 1, 1),
-          false));
+          false);
 
-    spheres[1] = (new Sphere(
+    spheres[1] = new Sphere(
           new Vector3(-10012, 0, 0),
           9999,
           new Vector3(1, 0, 0),
-          false));
+          false);
 
-    spheres[2] = (new Sphere(
+    spheres[2] = new Sphere(
           new Vector3(10012, 0, 0),
           9999,
           new Vector3(0, 1, 0),
-          false));
+          false);
 
-    spheres[3] = (new Sphere(
+    spheres[3] = new Sphere(
           new Vector3(0, 0, -10012),
           9999,
           new Vector3(1, 1, 1),
-          false));
+          false);
 
-    spheres[4] = (new Sphere(
+    spheres[4] = new Sphere(
           new Vector3(0, 10012, 0),
           9999,
           new Vector3(1, 1, 1),
-          true));
+          true);
 
-    spheres[5] = (new Sphere(
+    spheres[5] = new Sphere(
           new Vector3(-5, 0, 2),
           2,
           new Vector3(1, 1, 0),
-          false));
+          false);
 
-    spheres[6] = (new Sphere(
+    spheres[6] = new Sphere(
           new Vector3(0, 5, -1),
           4,
           new Vector3(1, 0, 0),
-          false));
+          false);
 
-    spheres[7] = (new Sphere(
+    spheres[7] = new Sphere(
           new Vector3(8, 5, -1),
           2,
           new Vector3(0, 0, 1),
-          false));
+          false);
 
-    var data = new Vector3[RayBench.HEIGHT][];
+    var data = new Vector3[HEIGHT][];
     var cam = new Camera();
-    var vdu = cam.rt.Sub(cam.lt).Div(RayBench.WIDTH);
-    var vdv = cam.lb.Sub(cam.lt).Div(RayBench.HEIGHT);
+    var vdu = (cam.rt - cam.lt) / WIDTH;
+    var vdv = (cam.lb - cam.lt) / HEIGHT;
 
-    for(int y = 0; y < RayBench.HEIGHT; ++y) {
-      data[y] = new Vector3[RayBench.WIDTH];
-      for(int x = 0; x < RayBench.WIDTH; ++x) {
+    for(int y = 0; y < data.Length; y++) {
+      var dataY = new Vector3[WIDTH];
+      data[y] = dataY;
+      for(int x = 0; x < dataY.Length; x++) {
         var color = new Vector3();
-        var ray = new Ray();
+        var ray = new Ray() { origin = cam.eye };
 
-        ray.origin = cam.eye;
+        for(int i = 0; i < SAMPLES; ++i) {
+          ray.direction = cam.lt +
+              (vdu * (x + Random.NextFloat())) +
+              (vdv * (y + Random.NextFloat()));
 
-        for(int i = 0; i < RayBench.SAMPLES; ++i) {
-          ray.direction = cam.lt.Add(
-              vdu.Mul((float)(x + rnd.NextDouble())).Add(
-                vdv.Mul((float)(y + rnd.NextDouble()))));
-
-          ray.direction = ray.direction.Sub(ray.origin);
+          ray.direction -= ray.origin;
           ray.direction = ray.direction.Unit();
-          color = color.Add(RayBench.trace(ray, 0));
+          color += Trace(ray, 0);
         }
 
-        color = color.Div(RayBench.SAMPLES);
+        color /= SAMPLES;
 
-        data[y][x] = color;
+        dataY[x] = color;
       }
     }
 
-    RayBench.WritePPM(data);
+    WritePPM(data);
   }
 }
