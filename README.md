@@ -74,6 +74,18 @@ user    1m58.216s
 sys     0m0.112s
 ```
 
+C with vector extensions (crb-vec.c)
+
+```
+$ gcc crb-vec.c -o crb-vec -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
+```
+
+```
+$ time ./crb-vec
+
+?
+```
+
 C Double Precision (crb-dbl.c)
 
 ```
