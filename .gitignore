@@ -4,6 +4,7 @@
 *.ko
 *.obj
 *.elf
+*.class
 
 # Precompiled Headers
 *.gch
@@ -48,3 +49,4 @@ crb.omp
 gorb
 nimrb
 nimrb_dbl
+scalarb
