@@ -1,5 +1,5 @@
 #gcc -Ofast -std=c11 -lm -o crb crb.c -D_XOPEN_SOURCE=600 -march=native -fomit-frame-pointer
-all: crb crb-vec crb-dbl crb-omp ocamlrb hsrb gorb nimrb nimrb_dbl asmrb crrb javarb
+all: crb crb-vec crb-dbl crb-omp ocamlrb hsrb gorb nimrb nimrb_dbl asmrb crrb javarb adarb
 
 .PHONY: crb
 crb:
@@ -75,3 +75,7 @@ crrb:
 .PHONY: javarb
 javarb:
 	javac javarb.java
+
+.PHONY: adarb
+adarb:
+	gnatmake -O3 -gnatp -gnat2012 adarb.adb
