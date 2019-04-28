@@ -53,7 +53,7 @@ nimrb_opt:
 .PHONY: nimrb_fn
 nimrb_fn:
 	nim c --hints:off -d:release nimrb_fn.nim
- 
+
 
 .PHONY: nimrb_dbl
 nimrb_dbl:
@@ -76,6 +76,11 @@ crrb:
 javarb:
 	javac javarb.java
 
+.PHONY: scalarb
+scalarb:
+	scalac scalarb.scala
+
 .PHONY: adarb
 adarb:
 	gnatmake -O3 -gnatp -gnat2012 adarb.adb
+
