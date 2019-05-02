@@ -239,14 +239,14 @@ class RayBench{
 
   public static void WritePPM (Vector3[][] data) {
     using (var ppm = new System.IO.StreamWriter("csrb-mt.ppm")) {
-      ppm.Write(String.Format("P3\n{0} {1}\n255\n", RayBench.WIDTH, RayBench.HEIGHT));
+      ppm.Write($"P3\n{RayBench.WIDTH} {RayBench.HEIGHT}\n255\n");
 
       for(int y = 0; y < HEIGHT; ++y) {
         for(int x = 0; x < WIDTH; ++x) {
           int r = (int) Math.Floor(data[y][x].x * 255.99f);
           int g = (int) Math.Floor(data[y][x].y * 255.99f);
           int b = (int) Math.Floor(data[y][x].z * 255.99f);
-          ppm.Write(String.Format("{0} {1} {2} ", r, g, b));
+          ppm.Write($"{r} {g} {b} ");
         }
         ppm.Write("\n");
       }
