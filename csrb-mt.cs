@@ -321,6 +321,7 @@ class RayBench{
     options.MaxDegreeOfParallelism = Environment.ProcessorCount;
 
     Parallel.For(0, RayBench.HEIGHT, options, y => {
+      var random = rnd.Value;
       data[y] = new Vector3[RayBench.WIDTH];
       for(int x = 0; x < RayBench.WIDTH; ++x) {
         var color = new Vector3();
@@ -330,12 +331,12 @@ class RayBench{
 
         for(int i = 0; i < RayBench.SAMPLES; ++i) {
           ray.direction = cam.lt.Add(
-              vdu.Mul(x + rnd.Value.NextFloat()).Add(
-                vdv.Mul(y + rnd.Value.NextFloat())));
+              vdu.Mul(x + random.NextFloat()).Add(
+                vdv.Mul(y + random.NextFloat())));
 
           ray.direction = ray.direction.Sub(ray.origin);
           ray.direction = ray.direction.Unit();
-          color = color.Add(RayBench.trace(ray, 0, rnd.Value));
+          color = color.Add(RayBench.trace(ray, 0, random));
         }
 
         color = color.Div(RayBench.SAMPLES);
