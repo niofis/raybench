@@ -1,17 +1,25 @@
 using System;
 using System.Threading.Tasks;
 
-class Vector3 {
+//https://codingforspeed.com/using-faster-psudo-random-generator-xorshift/
+class Random {
+  uint x = 123456789;
+  uint y = 362436069;
+  uint z = 521288629;
+  uint w = 88675123;
+  
+  public float NextFloat() {
+    uint t = x ^ (x << 11);
+    x = y; y = z; z = w;
+    return (w = w ^ (w >> 19) ^ (t ^ (t >> 8))) / (float)uint.MaxValue;
+  }
+}
+
+struct Vector3 {
 
   public float x;
   public float y;
   public float z;
-
-  public Vector3 () {
-    this.x = 0;
-    this.y = 0;
-    this.z = 0;
-  }
 
   public Vector3 (float x, float y, float z) {
     this.x = x;
@@ -80,12 +88,9 @@ class Vector3 {
   }
 }
 
-class Ray {
+struct Ray {
   public Vector3 origin;
   public Vector3 direction;
-
-  public Ray () {
-  }
 
   public Ray (Vector3 origin, Vector3 direction) {
     this.origin = origin;
@@ -97,16 +102,10 @@ class Ray {
   }
 }
 
-class Hit {
+struct Hit {
   public float dist;
   public Vector3 point;
   public Vector3 normal;
-
-  public Hit () {
-    this.dist = 0;
-    this.point = new Vector3();
-    this.normal = new Vector3();
-  }
 
   public Hit (float dist, Vector3 point, Vector3 normal) {
     this.dist = dist;
@@ -115,32 +114,18 @@ class Hit {
   }
 }
 
-class Camera {
+struct Camera {
   public Vector3 eye;
   public Vector3 lt;
   public Vector3 rt;
   public Vector3 lb;
-
-  public Camera () {
-    this.eye = new Vector3(0.0f, 4.5f, 75.0f);
-    this.lt = new Vector3(-8, 9, 50);
-    this.rt = new Vector3(8, 9, 50);
-    this.lb = new Vector3(-8, 0, 50);
-  }
 }
 
-class Sphere {
+struct Sphere {
   public Vector3 center;
   public float radius;
   public Vector3 color;
   public bool is_light;
-
-  public Sphere () {
-    this.center = new Vector3();
-    this.radius = 1;
-    this.color = new Vector3(1,0,0);
-    this.is_light = false;
-  }
 
   public Sphere (Vector3 center, float radius, Vector3 color, bool is_light) {
     this.center = center;
@@ -149,7 +134,7 @@ class Sphere {
     this.is_light = is_light;
   }
 
-  public Hit Hit (Ray ray) {
+  public Hit? Hit (Ray ray) {
     var oc = ray.origin.Sub(this.center);
     float a = ray.direction.Dot(ray.direction);
     float b = oc.Dot(ray.direction);
@@ -195,16 +180,15 @@ class RayBench{
   public const int SAMPLES = 50;
   public const int MAX_DEPTH = 5;
   public static Sphere[] spheres = new Sphere[8];
-  public static Random rnd = new Random();
 
-  public static Vector3 rnd_dome (Vector3 normal) {
+  public static Vector3 rnd_dome (Vector3 normal, Random rnd) {
     var p = new Vector3();
     float d;
 
     do {
-      p.x = (float)(2.0 * rnd.NextDouble() - 1.0);
-      p.y = (float)(2.0 * rnd.NextDouble() - 1.0);
-      p.z = (float)(2.0 * rnd.NextDouble() - 1.0);
+      p.x = 2.0f * rnd.NextFloat() - 1.0f;
+      p.y = 2.0f * rnd.NextFloat() - 1.0f;
+      p.z = 2.0f * rnd.NextFloat() - 1.0f;
 
       p = p.Unit();
       d = p.Dot(normal);
@@ -213,22 +197,22 @@ class RayBench{
     return p;
   }
 
-  public static Vector3 trace(Ray ray, int depth) {
+  public static Vector3 trace(Ray ray, int depth, Random rnd) {
     var color = new Vector3();
     bool did_hit = false;
     var hit = new Hit();
-    Sphere sp = null;
+    var sp = new Sphere();
 
     hit.dist = 1e15f;
 
     foreach(var s in spheres) {
       var lh = s.Hit(ray);
 
-      if (lh !=null && lh.dist > 0.0001f && lh.dist < hit.dist) {
+      if (lh !=null && lh.Value.dist > 0.0001f && lh.Value.dist < hit.dist) {
         sp = s;
         did_hit = true;
         color = s.color;
-        hit = lh;  
+        hit = lh.Value;
       }
     }
 
@@ -236,9 +220,9 @@ class RayBench{
       if (sp.is_light != true) {
         var nray = new Ray(
             hit.point,
-            RayBench.rnd_dome(hit.normal)
+            RayBench.rnd_dome(hit.normal, rnd)
             );
-        var ncolor = RayBench.trace(nray, depth + 1);
+        var ncolor = RayBench.trace(nray, depth + 1, rnd);
         var at = nray.direction.Dot(hit.normal);
 
         color = color.Mul(ncolor.Mul(at));
@@ -246,7 +230,7 @@ class RayBench{
     }
 
     if (did_hit == false || depth >= MAX_DEPTH) {
-      color = new Vector3();
+      return new Vector3();
     }
 
     return color;
@@ -258,9 +242,9 @@ class RayBench{
 
       for(int y = 0; y < HEIGHT; ++y) {
         for(int x = 0; x < WIDTH; ++x) {
-          int r = (int) Math.Floor(data[y][x].x * 255.99);
-          int g = (int) Math.Floor(data[y][x].y * 255.99);
-          int b = (int) Math.Floor(data[y][x].z * 255.99);
+          int r = (int) Math.Floor(data[y][x].x * 255.99f);
+          int g = (int) Math.Floor(data[y][x].y * 255.99f);
+          int b = (int) Math.Floor(data[y][x].z * 255.99f);
           ppm.Write(String.Format("{0} {1} {2} ", r, g, b));
         }
         ppm.Write("\n");
@@ -321,15 +305,20 @@ class RayBench{
           false));
 
     var data = new Vector3[RayBench.HEIGHT][];
-    var cam = new Camera();
+    var cam = new Camera{
+      eye = new Vector3(0.0f, 4.5f, 75.0f),
+      lt = new Vector3(-8, 9, 50),
+      rt = new Vector3(8, 9, 50),
+      lb = new Vector3(-8, 0, 50),
+    };
     var vdu = cam.rt.Sub(cam.lt).Div(RayBench.WIDTH);
     var vdv = cam.lb.Sub(cam.lt).Div(RayBench.HEIGHT);
 
     var options = new ParallelOptions();
-    options.MaxDegreeOfParallelism = 4;
+    options.MaxDegreeOfParallelism = Environment.ProcessorCount;
 
-    //for(int y = 0; y < RayBench.HEIGHT; ++y) {
     Parallel.For(0, RayBench.HEIGHT, options, y => {
+      var rnd = new Random();
       data[y] = new Vector3[RayBench.WIDTH];
       for(int x = 0; x < RayBench.WIDTH; ++x) {
         var color = new Vector3();
@@ -339,12 +328,12 @@ class RayBench{
 
         for(int i = 0; i < RayBench.SAMPLES; ++i) {
           ray.direction = cam.lt.Add(
-              vdu.Mul((float)(x + rnd.NextDouble())).Add(
-                vdv.Mul((float)(y + rnd.NextDouble()))));
+              vdu.Mul(x + rnd.NextFloat()).Add(
+                vdv.Mul(y + rnd.NextFloat())));
 
           ray.direction = ray.direction.Sub(ray.origin);
           ray.direction = ray.direction.Unit();
-          color = color.Add(RayBench.trace(ray, 0));
+          color = color.Add(RayBench.trace(ray, 0, rnd));
         }
 
         color = color.Div(RayBench.SAMPLES);
