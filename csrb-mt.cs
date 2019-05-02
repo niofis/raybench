@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 //https://codingforspeed.com/using-faster-psudo-random-generator-xorshift/
@@ -254,6 +255,8 @@ class RayBench{
     }
   }
 
+  static readonly ThreadLocal<Random> rnd = new ThreadLocal<Random>(() => new Random());
+
   public static void Main (String[] args) {
 
     spheres[0] = (new Sphere(
@@ -318,7 +321,6 @@ class RayBench{
     options.MaxDegreeOfParallelism = Environment.ProcessorCount;
 
     Parallel.For(0, RayBench.HEIGHT, options, y => {
-      var rnd = new Random();
       data[y] = new Vector3[RayBench.WIDTH];
       for(int x = 0; x < RayBench.WIDTH; ++x) {
         var color = new Vector3();
@@ -328,12 +330,12 @@ class RayBench{
 
         for(int i = 0; i < RayBench.SAMPLES; ++i) {
           ray.direction = cam.lt.Add(
-              vdu.Mul(x + rnd.NextFloat()).Add(
-                vdv.Mul(y + rnd.NextFloat())));
+              vdu.Mul(x + rnd.Value.NextFloat()).Add(
+                vdv.Mul(y + rnd.Value.NextFloat())));
 
           ray.direction = ray.direction.Sub(ray.origin);
           ray.direction = ray.direction.Unit();
-          color = color.Add(RayBench.trace(ray, 0, rnd));
+          color = color.Add(RayBench.trace(ray, 0, rnd.Value));
         }
 
         color = color.Div(RayBench.SAMPLES);
