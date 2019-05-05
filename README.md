@@ -69,9 +69,9 @@ $ gcc crb.c -o crb -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
 ```
 $ time ./crb
 
-real    1m59.116s
-user    1m58.216s
-sys     0m0.112s
+real    1m32.039s
+user    1m30.197s
+sys     0m1.039s
 ```
 
 C with vector extensions (crb-vec.c)
