@@ -83,7 +83,9 @@ $ gcc crb-vec.c -o crb-vec -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
 ```
 $ time ./crb-vec
 
-?
+real    1m15.193s
+user    1m13.722s
+sys     0m0.893s
 ```
 
 C Double Precision (crb-dbl.c)
