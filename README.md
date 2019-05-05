@@ -265,13 +265,22 @@ user	2m1.116s
 sys	0m0.140s
 ```
 
-Rust (rustc 1.13.0-nightly), thanks to [tilpner](https://github.com/tilpner)
+Rust (rustc 1.34.1 (fc50f328b 2019-04-24)), thanks to [tilpner](https://github.com/tilpner)
 ```
 $ time cargo script rsrb.rs -d rand=0.3.14
 Progress: 99%
-real    1m32.392s
-user    1m31.732s
-sys     0m0.176s
+real    1m12.964s
+user    1m10.887s
+sys     0m1.410s
+```
+
+Rust Alt (rustc 1.34.1 (fc50f328b 2019-04-24))
+```
+$ time cargo script rsrb_alt.rs -d rand=0.3.14
+
+real    1m15.509s
+user    1m13.896s
+sys     0m0.962s
 ```
 
 Java (1.7.0_111, OpenJDK IcedTea 2.6.7)
