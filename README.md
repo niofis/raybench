@@ -117,24 +117,15 @@ real    225m58.621s
 user    224m2.140s
 sys     0m14.044s
 ```
-JavaScript (jsrb.js)
+Javascript (node.js v12.1.0)
 
 *node.js v5.7.1*
 ```
-$ time node jsrb.js 
+$ time node jsrb.js
 
-real    8m49.170s
-user    8m40.620s
-sys     0m4.488s
-```
-
-*node.js v6.2.1*
-```
-$ time node jsrb.js 
-
-real    7m59.041s
-user    7m50.412s
-sys     0m5.300s
+real    7m7.700s
+user    6m50.256s
+sys     0m13.321s
 ```
 
 C# (.net core 2.2.203)
