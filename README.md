@@ -137,17 +137,16 @@ user    7m50.412s
 sys     0m5.300s
 ```
 
-C# (csrb.js)
+C# (.net core 2.2.203)
 ```
-$ mcs csrb.cs
+dotnet build --configuration Release
 ```
+```
+$ time dotnet run --configuration Release
 
-```
-$ time mono csrb.exe 
-
-real    12m18.463s
-user    12m0.392s
-sys     0m11.488s
+real    3m33.321s
+user    3m27.987s
+sys     0m3.513s
 ```
 
 Haskell (hsrb.hs)
