@@ -228,28 +228,22 @@ user    6m35.732s
 sys     0m4.144s
 ```
 
-Nim (version 0.14.2)
-```
-$ nim c --boundChecks:off --floatChecks:off --opt:speed -d:release nimrb.nim
-```
+Nim (Compiler Version 0.19.4 [Linux: amd64])
 ```
 $ time ./nimrb
 
-real    1m53.320s
-user    1m52.236s
-sys     0m0.144s
+real	1m29.043s
+user	1m27.010s
+sys	0m1.139s
 ```
 
-Nim Double Precision (version 0.14.2)
-```
-$ nim c --boundChecks:off --floatChecks:off --opt:speed -d:release nimrb_dbl.nim
-```
+Nim Double Precision (Compiler Version 0.19.4 [Linux: amd64])
 ```
 $ time ./nimrb_dbl 
 
-real	3m19.547s
-user	3m18.432s
-sys	  0m0.268s
+real	2m17.034s
+user	2m13.979s
+sys	0m1.779s
 ```
 
 Crystal (version 0.18.7)
