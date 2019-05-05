@@ -60,7 +60,7 @@ power management:
 
 ## Implementations
 
-C (crb.c)
+C (crb.c) (gcc (Ubuntu 7.4.0-1ubuntu1~18.04) 7.4.0)
 
 ```
 $ gcc crb.c -o crb -std=c11 -O3 -lm -D_XOPEN_SOURCE=600
