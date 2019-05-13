@@ -275,13 +275,13 @@ real	2m36.949s
 user	2m34.344s
 sys	  0m1.832s
 ```
-Julia (version 0.4.6), thanks to [pierroelmito](https://github.com/pierroelmito)
+Julia (version 1.1.0), thanks to [pierroelmito](https://github.com/pierroelmito) and [staticfloat](https://github.com/staticfloat)
 ```
-$ time julia jlrb.jl 
-118.540627 seconds (286.21 k allocations: 22.626 MB, 0.08% gc time)
+$ time julia jlrb.jl
+120.827142 seconds (663.19 k allocations: 44.870 MiB, 0.01% gc time)
 
-real	2m1.166s
-user	2m0.324s
-sys	  0m0.260s
+real    2m2.025s
+user    1m59.348s
+sys     0m1.345s
 ```
 ```
