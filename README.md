@@ -284,4 +284,12 @@ real    2m2.025s
 user    1m59.348s
 sys     0m1.345s
 ```
+
+Ruby (2.7.0dev (2019-05-13 trunk 2dc613815d) [x86_64-linux]), thanks to [briankung](https://github.com/briankung)
+```
+$ time ruby rbrb.rb
+
+real    207m12.067s
+user    202m19.372s
+sys     2m16.687s
 ```
