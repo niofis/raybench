@@ -140,16 +140,16 @@ user    3m27.987s
 sys     0m3.513s
 ```
 
-Haskell (hsrb.hs)
+Haskell (The Glorious Glasgow Haskell Compilation System, version 8.6.3), improvements thanks to [jmikkola](https://github.com/jmikkola)
 ```
 $ ghc -O3 -o hsrb hsrb.hs
 ```
 ```
 $ time ./hsrb
 
-real    26m34.955s
-user    26m5.968s
-sys     0m21.108s
+real    35m35.170s
+user    34m39.833s
+sys     0m30.666s
 ```
 
 Python (pyrb.py)
