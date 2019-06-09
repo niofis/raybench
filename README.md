@@ -126,16 +126,16 @@ user    6m50.256s
 sys     0m13.321s
 ```
 
-C# (.net core 2.2.203)
+C# (.net core 2.2.203), improvements thanks to [benaadams](https://github.com/benaadams), [FICTURE7](https://github.com/FICTURE7) and [lostmsu](https://github.com/lostmsu)
 ```
 dotnet build --configuration Release
 ```
 ```
 $ time dotnet run --configuration Release
 
-real    3m33.321s
-user    3m27.987s
-sys     0m3.513s
+real    2m34.957s
+user    2m30.212s
+sys     0m2.625s
 ```
 
 Haskell (The Glorious Glasgow Haskell Compilation System, version 8.6.3), improvements thanks to [jmikkola](https://github.com/jmikkola)
