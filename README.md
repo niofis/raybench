@@ -118,8 +118,6 @@ user    224m2.140s
 sys     0m14.044s
 ```
 Javascript (node.js v12.1.0)
-
-*node.js v5.7.1*
 ```
 $ time node jsrb.js
 
