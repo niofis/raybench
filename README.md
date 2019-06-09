@@ -207,13 +207,13 @@ user    132m20.264s
 sys     4m54.372s
 ```
 
-Go (version 1.6)
+Go (version 1.12.5), thanks to [weberc2](https://github.com/weberc2)
 ```
-$ time ./gorb
-
-real    6m44.151s
-user    6m35.732s
-sys     0m4.144s
+$ time ./gorb                                                                                                                                                                   
+                                                                                                                                                                                                          
+real    4m7.536s                                                                                                                                                                                          
+user    3m57.942s                                                                                                                                                                                         
+sys     0m6.745s
 ```
 
 Nim (Compiler Version 0.19.4 [Linux: amd64])
