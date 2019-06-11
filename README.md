@@ -150,13 +150,13 @@ user    34m39.833s
 sys     0m30.666s
 ```
 
-Python (pyrb.py)
+Python (version 2.7.15rc1)
 ```
-$ time python pyrb.py 
+$ time python pyrb.py
 
-real    348m35.965s
-user    345m51.776s
-sys     0m22.880s
+real    327m45.162s
+user    320m5.804s
+sys     3m44.487s
 ```
 ```
 $ time pypy pyrb.py
