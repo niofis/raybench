@@ -1,7 +1,9 @@
-import           Data.List
+import           Control.Monad.ST
+
+import           Data.Vector       ( singleton )
 
 import           System.IO
-import           System.Random
+import           System.Random.MWC
 
 width :: Float
 width = 1280.0
@@ -174,23 +176,24 @@ sphereHit sphere' ray =
 pixels :: [[Pixel]]
 pixels = map (\y -> map (`Pixel` y) [ 0 .. (width - 1) ]) [ 0 .. (height - 1) ]
 
-primRays :: Camera -> [[Pixel]] -> [[[Ray]]]
-primRays (Camera eye' lt' rt' lb') = map (map toRay)
+render :: World -> [[Pixel]] -> [[Vector3]]
+render (World (Camera eye' lt' rt' lb') spheres') = map (map toVecs)
   where
     vdu = (rt' - lt') `vdivS` width
 
     vdv = (lb' - lt') `vdivS` height
 
-    toRay (Pixel x y) = snd $
-        mapAccumL (\(h : h' : xs) _ ->
-                   ( xs
-                   , Ray eye' $ vunit $ (lt' + (vdu `vmulS` (x + h))
-                                         + (vdv `vmulS` (y + h'))) - eye'
-                   ))
-                  rnd
-                  [ 0 .. samples ]
+    toVecs (Pixel x y) = runST $ do
+        gen <- initialize $ singleton (floor $ y * width + x)
+        mHits <- mapM (\_ -> do
+                           r <- rndP gen
+                           r' <- rndP gen
+                           traceRay 0 spheres' gen $ ray r r')
+                      [ 0 :: Int .. 50 ]
+        return $ avgHitsColor mHits
       where
-        rnd = rndsP $ floor $ y * width + x
+        ray r r' = Ray eye' $ vunit $
+            (lt' + (vdu `vmulS` (x + r)) + (vdv `vmulS` (y + r'))) - eye'
 
 toRGBStr :: Vector3 -> String
 toRGBStr (Vector3 x y z) = show (floor $ x * 255.99 :: Int) ++ " "
@@ -206,17 +209,20 @@ writePPM pixels' = do
     hPutStr file (concatMap (\line -> concatMap toRGBStr line ++ "\n") pixels')
     hClose file
 
-rndsP :: Int -> [Float]
-rndsP seed = randomRs (0.0, 0.9999) (mkStdGen seed)
+rndP :: Gen s -> ST s Float
+rndP = uniformR (0.0, 0.9999)
 
-rndsD :: Int -> [Float]
-rndsD seed = randomRs (-1.0, 1.0) (mkStdGen seed)
+rndsD :: Gen s -> ST s Float
+rndsD = uniformR (-1.0, 1.0)
 
-rndDome :: [Float] -> Vector3 -> Vector3
-rndDome rnds nrml = let p = vunit (Vector3 (head rnds) (rnds !! 1) (rnds !! 2))
-                        d = p `vdot` nrml
-                    in
-                        if d < 0 then rndDome (drop 3 rnds) nrml else p
+rndDome :: Gen s -> Vector3 -> ST s Vector3
+rndDome gen nrml = do
+    r <- rndsD gen
+    r2 <- rndsD gen
+    r3 <- rndsD gen
+    let p = vunit (Vector3 r r2 r3)
+        d = p `vdot` nrml
+    if d < 0 then rndDome gen nrml else return p
 
 closestHit :: [Maybe Hit] -> Maybe Hit
 closestHit [ x ] = x
@@ -227,31 +233,26 @@ closestHit (a@(Just x1) : b@(Just x2) : xs)
     | otherwise = closestHit (b : xs)
 closestHit [] = Nothing
 
-traceRay :: Int -> [Sphere] -> Ray -> Maybe Hit
-traceRay depth spheres' ray = mapHit $
+traceRay :: Int -> [Sphere] -> Gen s -> Ray -> ST s (Maybe Hit)
+traceRay depth spheres' gen ray = mapHit $
     closestHit (map (`sphereHit` ray) spheres')
   where
-    mapHit Nothing = Nothing
+    mapHit Nothing = return Nothing
     mapHit (Just hit)
-        | depth >= maxDepth = Nothing
-        | isLight $ sphere hit = Just hit
-        | otherwise =
-            let nray =
-                    Ray (point hit)
-                        (rndDome (rndsD (floor $ vnorm (point hit) * 1928374))
-                                 (normal hit))
-                at = direction nray `vdot` normal hit
-                nc = getMHitColor $ traceRay (depth + 1) spheres' nray
+        | depth >= maxDepth = return Nothing
+        | isLight $ sphere hit = return $ Just hit
+        | otherwise = do
+            rDome <- rndDome gen $ normal hit
+            let nray = Ray (point hit) rDome
+            tr <- traceRay (depth + 1) spheres' gen nray
+            let at = direction nray `vdot` normal hit
+                nc = getMHitColor tr
                 ncolor = hitcolor hit * (nc `vmulS` at)
-            in
-                Just (Hit (distance hit)
-                          (point hit)
-                          (normal hit)
-                          ncolor
-                          (sphere hit))
-
-traceLine :: [Sphere] -> [[Ray]] -> [[Maybe Hit]]
-traceLine spheres' = map $ map (traceRay 0 spheres')
+            return $ Just (Hit (distance hit)
+                               (point hit)
+                               (normal hit)
+                               ncolor
+                               (sphere hit))
 
 getMHitColor :: Maybe Hit -> Vector3
 getMHitColor Nothing = Vector3 0 0 0
@@ -264,13 +265,5 @@ avgHitsColor hits = foldr addColor (Vector3 0 0 0) hits
     addColor (Just (Hit _ _ _ clr _)) acc = clr + acc
     addColor _ acc = acc
 
-render :: World -> [[Vector3]]
-render (World cam spheres') =
-    let pixels' = pixels
-        rays = primRays cam pixels'
-        hits = map (traceLine spheres') rays
-    in
-        map (map avgHitsColor) hits
-
 main :: IO ()
-main = writePPM $ render world
+main = writePPM $ render world pixels
