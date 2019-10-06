@@ -219,10 +219,17 @@ bool hit_sphere(const struct sphere* sp, const struct ray* ray, struct hit* hit)
   return false;
 }
 
-struct rand_state rand_new()
+struct rand_state {
+  uint32_t x;
+  uint32_t y;
+  uint32_t z;
+  uint32_t w;
+};
+
+struct rand_state rand_new(uint32_t seed)
 {
   struct rand_state s = {
-    .x = 123456789,
+    .x = 123456789 + seed,
     .y = 362436069,
     .z = 521288629,
     .w = 88675123
@@ -238,24 +245,6 @@ float randf(struct rand_state* state) {
   state->x = state->y; state->y = state->z; state->z = state->w;   
   state->w = state->w ^ (state->w >> 19) ^ (t ^ (t >> 8));
   return (float)state->w / (float)UINT32_MAX;
-}
-
-struct v3 rnd_dome(struct rand_state* rand_state, const struct v3* normal)
-{
-  struct v3 p;
-  float d;
-  do
-  {
-    p.x = 2.0f * randf(rand_state) - 1.0f;
-    p.y = 2.0f * randf(rand_state) - 1.0f;
-    p.z = 2.0f * randf(rand_state) - 1.0f;
-
-    v3_mkunit(&p, &p);
-    
-    d = v3_dot(&p, normal);
-  } while(d <= 0);
-
-  return p;
 }
 
 struct v3 rnd_dome(struct rand_state* rand_state, const struct v3* normal)
@@ -364,7 +353,6 @@ int main (int argc, char** argv)
   v3_sub(&vdv, &world.camera.lb, &world.camera.lt);
   v3_divs(&vdv, &vdv, (float) HEIGHT);
 
-  struct rand_state rand_state = rand_new();
 
 #pragma omp parallel
   {
@@ -373,7 +361,7 @@ int main (int argc, char** argv)
     {
       for(uint_fast16_t x = 0; x < WIDTH; ++x)
       {
-
+        struct rand_state rand_state = rand_new(y * WIDTH + x);
         struct ray r;
         r.origin = world.camera.eye;
 
