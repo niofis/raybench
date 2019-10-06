@@ -219,32 +219,36 @@ bool hit_sphere(const struct sphere* sp, const struct ray* ray, struct hit* hit)
   return false;
 }
 
-//https://codingforspeed.com/using-faster-psudo-random-generator-xorshift/
-uint32_t xor128(void) {
-  static uint32_t x = 123456789;
-  static uint32_t y = 362436069;
-  static uint32_t z = 521288629;
-  static uint32_t w = 88675123;
-  uint32_t t;
-  t = x ^ (x << 11);   
-  x = y; y = z; z = w;   
-  return w = w ^ (w >> 19) ^ (t ^ (t >> 8));
-}
-
-float randf()
+struct rand_state rand_new()
 {
-    return (float)xor128() / (float)UINT32_MAX;
+  struct rand_state s = {
+    .x = 123456789,
+    .y = 362436069,
+    .z = 521288629,
+    .w = 88675123
+  };
+
+  return s;
 }
 
-struct v3 rnd_dome(const struct v3* normal)
+//https://codingforspeed.com/using-faster-psudo-random-generator-xorshift/
+float randf(struct rand_state* state) {
+  uint32_t t;
+  t = state->x ^ (state->x << 11);   
+  state->x = state->y; state->y = state->z; state->z = state->w;   
+  state->w = state->w ^ (state->w >> 19) ^ (t ^ (t >> 8));
+  return (float)state->w / (float)UINT32_MAX;
+}
+
+struct v3 rnd_dome(struct rand_state* rand_state, const struct v3* normal)
 {
   struct v3 p;
   float d;
   do
   {
-    p.x = 2.0f * randf() - 1.0f;
-    p.y = 2.0f * randf() - 1.0f;
-    p.z = 2.0f * randf() - 1.0f;
+    p.x = 2.0f * randf(rand_state) - 1.0f;
+    p.y = 2.0f * randf(rand_state) - 1.0f;
+    p.z = 2.0f * randf(rand_state) - 1.0f;
 
     v3_mkunit(&p, &p);
     
@@ -254,7 +258,25 @@ struct v3 rnd_dome(const struct v3* normal)
   return p;
 }
 
-struct v3 trace(struct world* world, struct ray* ray, uint_fast16_t depth)
+struct v3 rnd_dome(struct rand_state* rand_state, const struct v3* normal)
+{
+  struct v3 p;
+  float d;
+  do
+  {
+    p.x = 2.0f * randf(rand_state) - 1.0f;
+    p.y = 2.0f * randf(rand_state) - 1.0f;
+    p.z = 2.0f * randf(rand_state) - 1.0f;
+
+    v3_mkunit(&p, &p);
+    
+    d = v3_dot(&p, normal);
+  } while(d <= 0);
+
+  return p;
+}
+
+struct v3 trace(struct rand_state* rand_state, struct world* world, struct ray* ray, uint_fast16_t depth)
 {
   struct v3 color = {0};
   bool did_hit = false;
@@ -280,9 +302,9 @@ struct v3 trace(struct world* world, struct ray* ray, uint_fast16_t depth)
     {
       struct ray nray;
       nray.origin = hit.point;
-      nray.direction = rnd_dome(&hit.normal);
+      nray.direction = rnd_dome(rand_state, &hit.normal);
       struct v3 ncolor = {0};
-      ncolor = trace(world, &nray, depth + 1);
+      ncolor = trace(rand_state, world, &nray, depth + 1);
       float at = v3_dot(&nray.direction, &hit.normal);
       v3_muls(&ncolor, &ncolor, at);
       v3_mul(&color, &color, &ncolor);
@@ -341,6 +363,9 @@ int main (int argc, char** argv)
   struct v3 vdv = {0};
   v3_sub(&vdv, &world.camera.lb, &world.camera.lt);
   v3_divs(&vdv, &vdv, (float) HEIGHT);
+
+  struct rand_state rand_state = rand_new();
+
 #pragma omp parallel
   {
 #pragma omp for 
@@ -360,8 +385,8 @@ int main (int argc, char** argv)
         {
           r.direction = world.camera.lt;
 
-          v3_muls(&u, &vdu, (float)x + randf());
-          v3_muls(&v, &vdv, (float)y + randf());
+          v3_muls(&u, &vdu, (float)x + randf(&rand_state));
+          v3_muls(&v, &vdv, (float)y + randf(&rand_state));
 
           v3_add(&r.direction, &r.direction, &u);
           v3_add(&r.direction, &r.direction, &v);
@@ -369,7 +394,7 @@ int main (int argc, char** argv)
           v3_sub(&r.direction, &r.direction, &r.origin);
 
           v3_mkunit(&r.direction, &r.direction);
-          u = trace(&world, &r, 0);
+          u = trace(&rand_state, &world, &r, 0);
           v3_add(&c, &c, &u);
         }
 
