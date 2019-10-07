@@ -4,7 +4,6 @@ import (
   "fmt"
   "os"
   "math"
-  "math/rand"
 )
 
 const (
@@ -127,6 +126,7 @@ type hit struct {
   normal v3
 }
 
+
 var nohit = hit{distance: 1e16}
 
 func sphit (sp sphere, ray ray) hit {
@@ -160,25 +160,44 @@ func sphit (sp sphere, ray ray) hit {
   return nohit
 }
 
-func rnd_dome (normal v3) v3 {
+type rand func() float32
 
+func rand_new() func() float32 {
+  var x uint32 = 123456789
+  var y uint32 = 362436069
+  var z uint32 = 521288629
+  var w uint32 = 88675123
+  var t uint32 = 0
+  var max = float32(4294967295)
+  
+  return func() float32 {
+    t = x ^ (x << 11);   
+    x = y; y = z; z = w;   
+    w = w ^ (w >> 19) ^ (t ^ (t >> 8));
+    return float32(w) / max
+  }
+}
+
+
+func rnd_dome (randf rand, normal v3) v3 {
   var d float32
   var p v3
 
   d = -1
 
   for d < 0 {
-    p = v3_unit(v3{x: 2 * rand.Float32() - 1,
-    y: 2 * rand.Float32() - 1,
-    z: 2 * rand.Float32() - 1})
+    p = v3_unit(v3{x: 2 * randf() - 1,
+    y: 2 * randf() - 1,
+    z: 2 * randf() - 1})
 
     d = v3_dot(p, normal)
   }
 
-  return p;
+  return p
 }
 
-func trace (w world, r ray, depth int) v3 {
+
+func trace (randf rand, w world, r ray, depth int) v3 {
   did_hit := false
   hit := nohit
   color := zero
@@ -197,8 +216,8 @@ func trace (w world, r ray, depth int) v3 {
 
   if did_hit && depth < MaxDepth {
     if sp.is_light == false {
-      nray := ray{origin: hit.point, direction: rnd_dome(hit.normal)}
-      ncolor := trace(w, nray, depth + 1)
+      nray := ray{origin: hit.point, direction: rnd_dome(randf, hit.normal)}
+      ncolor := trace(randf, w, nray, depth + 1)
       at := v3_dot(nray.direction, hit.normal)
       color = v3_mul(color, v3_muls(ncolor,at))
     }
@@ -219,7 +238,6 @@ func writeppm (data [][]v3) {
 
   for _, row := range data {
     for _, c := range row {
-      //fmt.Printf("%#v\n", c)
       r := int(math.Floor(float64(c.x * 255.99)))
       g := int(math.Floor(float64(c.y * 255.99)))
       b := int(math.Floor(float64(c.z * 255.99)))
@@ -239,6 +257,8 @@ func main() {
 
   data = make([][]v3, Height)
 
+  randf := rand_new();
+
   for y := 0; y < Height; y++ {
     data[y] = make([]v3, Width)
 
@@ -253,10 +273,10 @@ func main() {
           v3_sub(
             v3_add(
               world.camera.lt,
-              v3_add(v3_muls(vdu, float32(x) + rand.Float32()),
-                     v3_muls(vdv, float32(y) + rand.Float32()))),
+              v3_add(v3_muls(vdu, float32(x) + randf()),
+                     v3_muls(vdv, float32(y) + randf()))),
             world.camera.eye))
-        color = v3_add(color, trace(world, ray, 0))
+        color = v3_add(color, trace(randf, world, ray, 0))
       }
 
       color = v3_divs(color, Samples)
@@ -266,3 +286,4 @@ func main() {
 
   writeppm(data)
 }
+
