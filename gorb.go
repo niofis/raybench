@@ -2,7 +2,6 @@ package main
 
 import (
   "fmt"
-  "os"
   "math"
 )
 
@@ -231,22 +230,17 @@ func trace (randf rand, w world, r ray, depth int) v3 {
 }
 
 func writeppm (data [][]v3) {
-  ppm, _ := os.Create("gorb.ppm")
-  defer ppm.Close()
-
-  ppm.WriteString(fmt.Sprintf("P3\n%d %d\n255\n", Width, Height))
+  fmt.Printf("P3\n%d %d\n255\n", Width, Height)
 
   for _, row := range data {
     for _, c := range row {
       r := int(math.Floor(float64(c.x * 255.99)))
       g := int(math.Floor(float64(c.y * 255.99)))
       b := int(math.Floor(float64(c.z * 255.99)))
-      ppm.WriteString(fmt.Sprintf("%d %d %d ", r, g, b))
+      fmt.Printf("%d %d %d ", r, g, b)
     }
-    ppm.WriteString("\n")
+    fmt.Printf("\n")
   }
-
-  ppm.Sync()
 }
 
 func main() {
