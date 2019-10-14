@@ -116,18 +116,6 @@ fn rand_new() -> Rng {
 }
 
 fn random_dome(rng: &mut Rng, normal: V3) -> V3 {
-    /*rng.gen_iter::<(f32, f32, f32)>()
-    .map(|(x, y, z)| {
-        (V3 {
-            x: x * 2. - 1.,
-            y: y * 2. - 1.,
-            z: z * 2. - 1.,
-        })
-        .unit()
-    })
-    .filter(|v| v.dot(&normal) >= 0.)
-    .next()
-    .unwrap()*/
     while true {
         let v = (V3 {
             x: rng.next().unwrap() * 2. - 1.,
