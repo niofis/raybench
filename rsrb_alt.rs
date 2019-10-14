@@ -1,8 +1,4 @@
-extern crate rand;
 use std::ops;
-use std::io::{BufWriter, Write};
-use std::fs::File;
-use rand::{Rng, SeedableRng};
 
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 720;
@@ -19,7 +15,7 @@ struct V3 {
 impl ops::Add<V3> for V3 {
     type Output = V3;
 
-    fn add(self, rhs: V3) -> V3 { 
+    fn add(self, rhs: V3) -> V3 {
         V3 {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
@@ -31,7 +27,7 @@ impl ops::Add<V3> for V3 {
 impl ops::Sub<V3> for V3 {
     type Output = V3;
 
-    fn sub(self, rhs: V3) -> V3 { 
+    fn sub(self, rhs: V3) -> V3 {
         V3 {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
@@ -43,7 +39,7 @@ impl ops::Sub<V3> for V3 {
 impl ops::Mul<V3> for V3 {
     type Output = V3;
 
-    fn mul(self, rhs: V3) -> V3 { 
+    fn mul(self, rhs: V3) -> V3 {
         V3 {
             x: self.x * rhs.x,
             y: self.y * rhs.y,
@@ -55,39 +51,100 @@ impl ops::Mul<V3> for V3 {
 impl ops::Mul<f32> for V3 {
     type Output = V3;
 
-    fn mul(self, rhs: f32) -> V3 { 
+    fn mul(self, rhs: f32) -> V3 {
         V3 {
             x: self.x * rhs,
             y: self.y * rhs,
             z: self.z * rhs,
         }
-    } 
+    }
 }
 
 impl ops::Div<f32> for V3 {
     type Output = V3;
 
-    fn div(self, rhs: f32) -> V3 { 
+    fn div(self, rhs: f32) -> V3 {
         V3 {
             x: self.x / rhs,
             y: self.y / rhs,
             z: self.z / rhs,
         }
-    } 
+    }
 }
 
 impl V3 {
-    fn dot(&self, rhs: &V3) -> f32 { self.x * rhs.x + self.y * rhs.y + self.z * rhs.z } 
-    fn norm(&self) -> f32 { self.dot(self).sqrt() }
-    fn unit(self) -> V3 { self / self.norm() }    
+    fn dot(&self, rhs: &V3) -> f32 {
+        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
+    }
+    fn norm(&self) -> f32 {
+        self.dot(self).sqrt()
+    }
+    fn unit(self) -> V3 {
+        self / self.norm()
+    }
 }
 
-fn random_dome<R: Rng>(rng: &mut R, normal: V3) -> V3 {
-    rng.gen_iter::<(f32, f32, f32)>()
-        .map(|(x, y, z)| (V3 {x: x * 2. - 1., y: y * 2. - 1., z: z * 2. - 1.}).unit())
-        .filter(|v| v.dot(&normal) >= 0.)
-        .next()
-        .unwrap()
+struct Rng {
+    x: u32,
+    y: u32,
+    z: u32,
+    w: u32,
+}
+
+impl Iterator for Rng {
+    type Item = f32;
+
+    fn next(&mut self) -> Option<f32> {
+        let max: f32 = 4294967295.0;
+        let t = self.x ^ (self.x << 11);
+        self.x = self.y;
+        self.y = self.z;
+        self.z = self.w;
+        self.w = self.w ^ (self.w >> 19) ^ (t ^ (t >> 8));
+        Some((self.w as f32) / max)
+    }
+}
+
+// Returns a Fibonacci sequence generator
+fn rand_new() -> Rng {
+    Rng {
+        x: 123456789,
+        y: 362436069,
+        z: 521288629,
+        w: 88675123,
+    }
+}
+
+fn random_dome(rng: &mut Rng, normal: V3) -> V3 {
+    /*rng.gen_iter::<(f32, f32, f32)>()
+    .map(|(x, y, z)| {
+        (V3 {
+            x: x * 2. - 1.,
+            y: y * 2. - 1.,
+            z: z * 2. - 1.,
+        })
+        .unit()
+    })
+    .filter(|v| v.dot(&normal) >= 0.)
+    .next()
+    .unwrap()*/
+    while true {
+        let v = (V3 {
+            x: rng.next().unwrap() * 2. - 1.,
+            y: rng.next().unwrap() * 2. - 1.,
+            z: rng.next().unwrap() * 2. - 1.,
+        })
+        .unit();
+        if v.dot(&normal) >= 0. {
+            return v;
+        }
+    }
+
+    V3 {
+        x: 0.,
+        y: 0.,
+        z: 0.,
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -125,7 +182,7 @@ struct Sphere {
 struct Hit {
     dist: f32,
     point: V3,
-    normal: V3
+    normal: V3,
 }
 
 impl Sphere {
@@ -172,71 +229,157 @@ struct World {
 }
 
 impl World {
-    fn new () -> World {
+    fn new() -> World {
         World {
             camera: Camera {
-                eye: V3 {x: 0., y: 4.5, z: 75.},
-                lt: V3 {x: -8., y: 9., z: 50.},
-                rt: V3 {x: 8., y: 9., z: 50.},
-                lb: V3 {x: -8., y: 0., z: 50.}
+                eye: V3 {
+                    x: 0.,
+                    y: 4.5,
+                    z: 75.,
+                },
+                lt: V3 {
+                    x: -8.,
+                    y: 9.,
+                    z: 50.,
+                },
+                rt: V3 {
+                    x: 8.,
+                    y: 9.,
+                    z: 50.,
+                },
+                lb: V3 {
+                    x: -8.,
+                    y: 0.,
+                    z: 50.,
+                },
             },
             spheres: vec![
                 Sphere {
-                    center: V3 {x: 0., y: -10002., z: 0.},
+                    center: V3 {
+                        x: 0.,
+                        y: -10002.,
+                        z: 0.,
+                    },
                     radius: 9999.,
-                    color: V3 {x: 1., y: 1., z: 1.},
+                    color: V3 {
+                        x: 1.,
+                        y: 1.,
+                        z: 1.,
+                    },
                     is_light: false,
                 },
                 Sphere {
-                    center: V3 {x: -10012., y: 0., z: 0.},
+                    center: V3 {
+                        x: -10012.,
+                        y: 0.,
+                        z: 0.,
+                    },
                     radius: 9999.,
-                    color: V3 {x: 1., y: 0., z: 0.},
+                    color: V3 {
+                        x: 1.,
+                        y: 0.,
+                        z: 0.,
+                    },
                     is_light: false,
                 },
                 Sphere {
-                    center: V3 {x: 10012., y: 0., z: 0.},
+                    center: V3 {
+                        x: 10012.,
+                        y: 0.,
+                        z: 0.,
+                    },
                     radius: 9999.,
-                    color: V3 {x: 0., y: 1., z: 0.},
+                    color: V3 {
+                        x: 0.,
+                        y: 1.,
+                        z: 0.,
+                    },
                     is_light: false,
                 },
                 Sphere {
-                    center: V3 {x: 0., y: 0., z: -10012.},
+                    center: V3 {
+                        x: 0.,
+                        y: 0.,
+                        z: -10012.,
+                    },
                     radius: 9999.,
-                    color: V3 {x: 1., y: 1., z: 1.},
+                    color: V3 {
+                        x: 1.,
+                        y: 1.,
+                        z: 1.,
+                    },
                     is_light: false,
                 },
                 Sphere {
-                    center: V3 {x: 0., y: 10012., z: 0.},
+                    center: V3 {
+                        x: 0.,
+                        y: 10012.,
+                        z: 0.,
+                    },
                     radius: 9999.,
-                    color: V3 {x: 1., y: 1., z: 1.},
+                    color: V3 {
+                        x: 1.,
+                        y: 1.,
+                        z: 1.,
+                    },
                     is_light: true,
                 },
                 Sphere {
-                    center: V3 {x: -5., y: 0., z: 2.},
+                    center: V3 {
+                        x: -5.,
+                        y: 0.,
+                        z: 2.,
+                    },
                     radius: 2.,
-                    color: V3 {x: 1., y: 1., z: 0.},
+                    color: V3 {
+                        x: 1.,
+                        y: 1.,
+                        z: 0.,
+                    },
                     is_light: false,
                 },
                 Sphere {
-                    center: V3 {x: 0., y: 5., z: -1.},
+                    center: V3 {
+                        x: 0.,
+                        y: 5.,
+                        z: -1.,
+                    },
                     radius: 4.,
-                    color: V3 {x: 1., y: 0., z: 0.},
+                    color: V3 {
+                        x: 1.,
+                        y: 0.,
+                        z: 0.,
+                    },
                     is_light: false,
                 },
                 Sphere {
-                    center: V3 {x: 8., y: 5., z: -1.},
+                    center: V3 {
+                        x: 8.,
+                        y: 5.,
+                        z: -1.,
+                    },
                     radius: 2.,
-                    color: V3 {x: 0., y: 0., z: 1.},
+                    color: V3 {
+                        x: 0.,
+                        y: 0.,
+                        z: 1.,
+                    },
                     is_light: false,
-                }],
+                },
+            ],
         }
     }
 
-    fn trace<R: Rng>(&self, rng: &mut R, ray: &Ray, depth: u32) -> V3 {
+    fn trace(&self, rng: &mut Rng, ray: &Ray, depth: u32) -> V3 {
         if depth >= MAXDEPTH {
-            return V3 {x: 0., y: 0., z: 0.};
+            return V3 {
+                x: 0.,
+                y: 0.,
+                z: 0.,
+            };
         }
-        let closest_hit = self.spheres
+        let closest_hit = self
+            .spheres
             .iter()
             .filter_map(|sphere| sphere.hit(ray).map(|hit| (sphere, hit)))
             .fold(None, |old, (sphere, hit)| match old {
@@ -253,26 +396,31 @@ impl World {
                 let ncolor = self.trace(rng, &nray, depth + 1);
                 let at = nray.direction.dot(&hit.normal);
                 sphere.color * (ncolor * at)
-            },
+            }
             Some((ref sphere, _)) => sphere.color,
-            _ => V3 {x: 0., y: 0., z: 0.}
+            _ => V3 {
+                x: 0.,
+                y: 0.,
+                z: 0.,
+            },
         }
     }
 }
 
 fn write_ppm(data: &Vec<V3>) {
-    let mut ppm = BufWriter::new(File::create("rsrb_alt.ppm").expect("Error creating file"));
-    write!(ppm, "P3\n{} {}\n255\n", WIDTH, HEIGHT);
+    println!("P3\n{} {}\n255", WIDTH, HEIGHT);
 
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
             let pixel = data[y * WIDTH + x];
-            write!(ppm, "{} {} {} ",
-                   (pixel.x * 255.99) as u8, 
-                   (pixel.y * 255.99) as u8, 
-                   (pixel.z * 255.99) as u8);
+            print!(
+                "{} {} {} ",
+                (pixel.x * 255.99) as u8,
+                (pixel.y * 255.99) as u8,
+                (pixel.z * 255.99) as u8
+            );
         }
-        write!(ppm, "\n");
+        print!("\n");
     }
 }
 
@@ -281,26 +429,36 @@ fn main() {
     let vdu = (world.camera.rt - world.camera.lt) / WIDTH as f32;
     let vdv = (world.camera.lb - world.camera.lt) / HEIGHT as f32;
 
-    let data: Vec<V3> = (0..HEIGHT*WIDTH).map(|pixel| {
-        let x = pixel % WIDTH;
-        let y = pixel / WIDTH;
+    let mut rng = rand_new();
+    let data: Vec<V3> = (0..HEIGHT * WIDTH)
+        .map(|pixel| {
+            let x = pixel % WIDTH;
+            let y = pixel / WIDTH;
 
-        let mut rng = rand::XorShiftRng::from_seed([pixel as u32, x as u32, y as u32, 42]);
+            let color: V3 = (0..SAMPLES)
+                .map(|_| {
+                    let ray = Ray {
+                        origin: world.camera.eye,
+                        direction: ((world.camera.lt
+                            + (vdu * (x as f32 + rng.next().unwrap())
+                                + vdv * (y as f32 + rng.next().unwrap())))
+                            - world.camera.eye)
+                            .unit(),
+                    };
 
-        let color: V3 = (0..SAMPLES).map(|_| {
-            let ray = Ray {
-                origin: world.camera.eye,
-                direction: ((world.camera.lt +
-                             (vdu * (x as f32 + rng.gen::<f32>()) +
-                              vdv * (y as f32 + rng.gen::<f32>()))) -
-                            world.camera.eye)
-                    .unit(),
-            };
+                    world.trace(&mut rng, &ray, 0)
+                })
+                .fold(
+                    V3 {
+                        x: 0.,
+                        y: 0.,
+                        z: 0.,
+                    },
+                    |a, b| a + b,
+                );
 
-            world.trace(&mut rng, &ray, 0)
-        }).fold(V3 {x:0., y:0., z:0.}, |a, b| a + b);
-
-        color / SAMPLES as f32
-    }).collect();
+            color / SAMPLES as f32
+        })
+        .collect();
     write_ppm(&data);
 }

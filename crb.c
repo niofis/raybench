@@ -314,26 +314,21 @@ struct v3 trace(struct rand_state* rand_state, struct world* world, struct ray* 
 
 void writeppm(struct v3 *data)
 {
-  FILE *ppm = fopen("crb.ppm","w+");
-  fprintf(ppm,"P3\n%u %u\n255\n", WIDTH, HEIGHT);
+  printf("P3\n%u %u\n255\n", WIDTH, HEIGHT);
 
   for(uint_fast16_t y = 0; y < HEIGHT; ++y)
   {
     for(uint_fast16_t x = 0; x < WIDTH; ++x)
     {
       
-      fprintf(ppm, "%u %u %u ", 
+      printf("%u %u %u ", 
           (uint_fast16_t)(data[y * WIDTH + x].x * 255.99f), 
           (uint_fast16_t)(data[y * WIDTH + x].y * 255.99f),
           (uint_fast16_t)(data[y * WIDTH + x].z * 255.99f)
           );
     }
-    
-    fprintf(ppm, "\n");
+    printf("\n");
   }
-
-  fclose(ppm);
-
 }
 
 int main (int argc, char** argv)
