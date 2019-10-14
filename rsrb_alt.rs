@@ -116,7 +116,7 @@ fn rand_new() -> Rng {
 }
 
 fn random_dome(rng: &mut Rng, normal: V3) -> V3 {
-    while true {
+    loop {
         let v = (V3 {
             x: rng.next().unwrap() * 2. - 1.,
             y: rng.next().unwrap() * 2. - 1.,
@@ -126,12 +126,6 @@ fn random_dome(rng: &mut Rng, normal: V3) -> V3 {
         if v.dot(&normal) >= 0. {
             return v;
         }
-    }
-
-    V3 {
-        x: 0.,
-        y: 0.,
-        z: 0.,
     }
 }
 
