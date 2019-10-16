@@ -33,6 +33,23 @@ fn compile_run(
     (name.to_string(), elapsed, ppm_string.to_string())
 }
 
+fn simply_run(name: &str, compiler: &str, args: Vec<&str>, ppm: &str) -> (String, f64, String) {
+    println!("{}\nRunning...", &name);
+    let start = time::precise_time_s();
+    let output = Command::new(compiler)
+        .args(&args)
+        .output()
+        .expect("failed to run");
+    let end = time::precise_time_s();
+    let elapsed = end - start;
+    println!("Running time: {:.4}s", elapsed);
+
+    let ppm_string = String::from_utf8_lossy(&output.stdout);
+    let mut ppm_file = BufWriter::new(File::create(ppm).expect("error creating file"));
+    write!(ppm_file, "{}", &ppm_string);
+
+    (name.to_string(), elapsed, ppm_string.to_string())
+}
 fn baseline() -> (String, f64, String) {
     compile_run(
         "Baseline (C lang)",
@@ -67,6 +84,10 @@ fn go_lang() -> (String, f64, String) {
     compile_run("Go", "go", vec!["build", "gorb.go"], "./gorb", "gorb.ppm")
 }
 
+fn js_lang() -> (String, f64, String) {
+    simply_run("Javascript", "node", vec!["jsrb.js"], "jsrb.ppm")
+}
+
 fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
@@ -95,13 +116,16 @@ fn main() {
         if let Some(langs) = matches.value_of("implementations") {
             let results: Vec<(String, f64, String)> = langs
                 .split(",")
-                .filter_map(|lang| {
+                .filter_map(|lang_str| {
+                    let lang = lang_str.trim();
                     if lang == "c" {
                         return Some(c_lang());
                     } else if lang == "rust" {
                         return Some(rust_lang());
                     } else if lang == "go" {
                         return Some(go_lang());
+                    } else if lang == "js" {
+                        return Some(js_lang());
                     } else {
                         return None;
                     }

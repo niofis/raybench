@@ -250,9 +250,7 @@ function trace(randf, world, ray, depth) {
 }
 
 function writeppm(data) {
-  var ppm = fs.openSync('jsrb.ppm', 'w');
-
-  fs.writeSync(ppm, `P3\n${WIDTH} ${HEIGHT}\n255\n`);
+  process.stdout.write(`P3\n${WIDTH} ${HEIGHT}\n255\n`);
 
   for (let y = 0; y < HEIGHT; ++y) {
     for (let x = 0; x < WIDTH; ++x) {
@@ -260,11 +258,10 @@ function writeppm(data) {
       let r = Math.floor(pixel.x * 255.99);
       let g = Math.floor(pixel.y * 255.99);
       let b = Math.floor(pixel.z * 255.99);
-      fs.writeSync(ppm, `${r} ${g} ${b} `);
+      process.stdout.write(`${r} ${g} ${b} `);
     }
-    fs.writeSync(ppm, '\n');
+    process.stdout.write('\n');
   }
-  fs.closeSync(ppm);
 }
 
 (() => {
