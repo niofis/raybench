@@ -7,37 +7,23 @@ use std::process::Command;
 
 fn compile_run(
     name: &str,
-    compiler: &str,
-    args: Vec<&str>,
+    compile: &str,
     run: &str,
     ppm: &str,
 ) -> (String, f64, String) {
     println!("{}\nCompiling...", &name);
-    Command::new(compiler)
-        .args(&args)
+    let args: Vec<&str> = compile.split(" ").collect();
+    Command::new(args[0])
+        .args(&args[1..])
         .spawn()
         .expect("compilation did not succeed")
-        .wait();
+        .wait().expect("wait");
 
     println!("Running...");
     let start = time::precise_time_s();
-    let output = Command::new(run).output().expect("failed to run");
-    let end = time::precise_time_s();
-    let elapsed = end - start;
-    println!("Running time: {:.4}s", elapsed);
-
-    let ppm_string = String::from_utf8_lossy(&output.stdout);
-    let mut ppm_file = BufWriter::new(File::create(ppm).expect("error creating file"));
-    write!(ppm_file, "{}", &ppm_string);
-
-    (name.to_string(), elapsed, ppm_string.to_string())
-}
-
-fn simply_run(name: &str, compiler: &str, args: Vec<&str>, ppm: &str) -> (String, f64, String) {
-    println!("{}\nRunning...", &name);
-    let start = time::precise_time_s();
-    let output = Command::new(compiler)
-        .args(&args)
+    let args: Vec<&str> = run.split(" ").collect();
+    let output = Command::new(args[0])
+        .args(&args[1..])
         .output()
         .expect("failed to run");
     let end = time::precise_time_s();
@@ -46,15 +32,34 @@ fn simply_run(name: &str, compiler: &str, args: Vec<&str>, ppm: &str) -> (String
 
     let ppm_string = String::from_utf8_lossy(&output.stdout);
     let mut ppm_file = BufWriter::new(File::create(ppm).expect("error creating file"));
-    write!(ppm_file, "{}", &ppm_string);
+    write!(ppm_file, "{}", &ppm_string).expect("write ppm");
 
     (name.to_string(), elapsed, ppm_string.to_string())
 }
+
+fn simply_run(name: &str, run: &str, ppm: &str) -> (String, f64, String) {
+    println!("{}\nRunning...", &name);
+    let start = time::precise_time_s();
+    let args: Vec<&str> = run.split(" ").collect();
+    let output = Command::new(args[0])
+        .args(&args[1..])
+        .output()
+        .expect("failed to run");
+    let end = time::precise_time_s();
+    let elapsed = end - start;
+    println!("Running time: {:.4}s", elapsed);
+
+    let ppm_string = String::from_utf8_lossy(&output.stdout);
+    let mut ppm_file = BufWriter::new(File::create(ppm).expect("error creating file"));
+    write!(ppm_file, "{}", &ppm_string).expect("write ppm");
+
+    (name.to_string(), elapsed, ppm_string.to_string())
+}
+
 fn baseline() -> (String, f64, String) {
     compile_run(
         "Baseline (C lang)",
-        "gcc",
-        vec!["crb.c", "-o", "baseline", "-std=c11", "-O3", "-lm"],
+        "gcc crb.c -o baseline -std=c11 -O3 -lm",
         "./baseline",
         "baseline.ppm",
     )
@@ -63,8 +68,7 @@ fn baseline() -> (String, f64, String) {
 fn c_lang() -> (String, f64, String) {
     compile_run(
         "C",
-        "gcc",
-        vec!["crb.c", "-o", "crb", "-std=c11", "-O3", "-lm"],
+        "gcc crb.c -o crb -std=c11 -O3 -lm",
         "./crb",
         "crb.ppm",
     )
@@ -73,19 +77,22 @@ fn c_lang() -> (String, f64, String) {
 fn rust_lang() -> (String, f64, String) {
     compile_run(
         "Rust Alt",
-        "rustc",
-        vec!["rsrb_alt.rs", "-o", "rsrb_alt", "-O"],
+        "rustc rsrb_alt.rs -o rsrb_alt -O",
         "./rsrb_alt",
         "rsrb_alt.ppm",
     )
 }
 
 fn go_lang() -> (String, f64, String) {
-    compile_run("Go", "go", vec!["build", "gorb.go"], "./gorb", "gorb.ppm")
+    compile_run("Go", "go build gorb.go", "./gorb", "gorb.ppm")
 }
 
 fn js_lang() -> (String, f64, String) {
-    simply_run("Javascript", "node", vec!["jsrb.js"], "jsrb.ppm")
+    simply_run("Javascript", "node jsrb.js", "jsrb.ppm")
+}
+
+fn cs_lang() -> (String, f64, String) {
+    compile_run("C#", "sh ./csrb/compile.sh", "sh ./csrb/run.sh", "csrb.ppm")
 }
 
 fn main() {
@@ -126,6 +133,8 @@ fn main() {
                         return Some(go_lang());
                     } else if lang == "js" {
                         return Some(js_lang());
+                    } else if lang == "cs" {
+                        return Some(cs_lang());
                     } else {
                         return None;
                     }

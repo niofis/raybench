@@ -53,3 +53,5 @@ nimrb_dbl
 scalarb
 
 target/
+bin/
+obj/
