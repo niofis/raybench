@@ -175,26 +175,18 @@ class RayBench {
   }
 
   public static void WritePPM(Vector3[] data) {
-    using (var ppm = new StreamWriter("csrb.ppm", false, Encoding.ASCII, 8 * 1024)) {
-      ppm.Write($"P3\n{WIDTH} {HEIGHT}\n255\n");
+    Console.Write($"P3\n{WIDTH} {HEIGHT}\n255\n");
 
-      for(int y = 0; y < HEIGHT; y++) {
-        for (int x = 0; x < WIDTH; x++) {
-          var vec = data[WIDTH * y + x] * 255.99f;
-          int r = (int)MathF.Floor(vec.X);
-          int g = (int)MathF.Floor(vec.Y);
-          int b = (int)MathF.Floor(vec.Z);
+    for(int y = 0; y < HEIGHT; y++) {
+      for (int x = 0; x < WIDTH; x++) {
+        var vec = data[WIDTH * y + x] * 255.99f;
+        int r = (int)MathF.Floor(vec.X);
+        int g = (int)MathF.Floor(vec.Y);
+        int b = (int)MathF.Floor(vec.Z);
 
-          ppm.Write(r);
-          ppm.Write(' ');
-          ppm.Write(g);
-          ppm.Write(' ');
-          ppm.Write(b);
-          ppm.Write(' ');
-        }
-
-        ppm.Write('\n');
+        Console.Write($"{r} {g} {b} ");
       }
+      Console.Write('\n');
     }
   }
 
