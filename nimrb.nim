@@ -129,16 +129,15 @@ proc trace(w: World, r: Ray, depth: int): V3 =
     result = zero
 
 proc writeppm(data: seq[seq[V3]]) =
-  let ppm = open("nimrb.ppm", fmWrite)
-  ppm.write(format("P3\n$# $#\n255\n",WIDTH, HEIGHT))
+  write(stdout, format("P3\n$# $#\n255\n",WIDTH, HEIGHT))
   for row in data:
     for c in row:
-      ppm.write(format("$# $# $# ",
+      write(stdout, format("$# $# $# ",
         floor(c.x * 255.99).int,
         floor(c.y * 255.99).int,
         floor(c.z * 255.99).int))
-    ppm.write("\n")
-  ppm.close()
+    write(stdout, "\n")
+  flushFile(stdout)
 
 proc main() =
   var data = newSeq[seq[V3]]()

@@ -95,11 +95,15 @@ fn cs_lang() -> (String, f64, String) {
     compile_run("C#", "sh ./csrb/compile.sh", "sh ./csrb/run.sh", "csrb.ppm")
 }
 
+fn nim_lang() -> (String, f64, String) {
+    compile_run("Nim", "nim c -d:release nimrb.nim", "./nimrb", "nimrb.ppm")
+}
+
 fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
-        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs")
+        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim")
         .subcommand(
             SubCommand::with_name("baseline")
             .about("builds and runs the baseline C implementation")
@@ -135,6 +139,8 @@ fn main() {
                         return Some(js_lang());
                     } else if lang == "cs" {
                         return Some(cs_lang());
+                    } else if lang == "nim" {
+                        return Some(nim_lang());
                     } else {
                         return None;
                     }
