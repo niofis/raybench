@@ -314,7 +314,7 @@ struct v3 trace(struct rand_state* rand_state, struct world* world, struct ray* 
 
 void writeppm(struct v3 *data)
 {
-  printf("P3\n%u %u\n255\n", WIDTH, HEIGHT);
+  printf("P3\n%u %u\n255\n", (uint32_t)WIDTH, (uint32_t)HEIGHT);
 
   for(uint_fast16_t y = 0; y < HEIGHT; ++y)
   {
@@ -322,9 +322,9 @@ void writeppm(struct v3 *data)
     {
       
       printf("%u %u %u ", 
-          (uint_fast16_t)(data[y * WIDTH + x].x * 255.99f), 
-          (uint_fast16_t)(data[y * WIDTH + x].y * 255.99f),
-          (uint_fast16_t)(data[y * WIDTH + x].z * 255.99f)
+          (uint32_t)(data[y * WIDTH + x].x * 255.99f), 
+          (uint32_t)(data[y * WIDTH + x].y * 255.99f),
+          (uint32_t)(data[y * WIDTH + x].z * 255.99f)
           );
     }
     printf("\n");
