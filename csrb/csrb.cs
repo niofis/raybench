@@ -175,7 +175,8 @@ class RayBench {
   }
 
   public static void WritePPM(Vector3[] data) {
-    Console.Write($"P3\n{WIDTH} {HEIGHT}\n255\n");
+    var sb = new StringBuilder();
+    sb.Append($"P3\n{WIDTH} {HEIGHT}\n255\n");
 
     for(int y = 0; y < HEIGHT; y++) {
       for (int x = 0; x < WIDTH; x++) {
@@ -184,10 +185,11 @@ class RayBench {
         int g = (int)MathF.Floor(vec.Y);
         int b = (int)MathF.Floor(vec.Z);
 
-        Console.Write($"{r} {g} {b} ");
+        sb.Append($"{r} {g} {b} ");
       }
-      Console.Write('\n');
+      sb.Append('\n');
     }
+    Console.Write(sb.ToString());
   }
 
   public static void Main(string[] args) {
