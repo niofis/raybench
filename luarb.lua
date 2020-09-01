@@ -1,4 +1,3 @@
-local io = require("io")
 local math = require("math")
 
 local WIDTH = 1280
@@ -324,21 +323,19 @@ local function trace (world, ray, depth)
 end
 
 local function writeppm (data)
-  local ppm = io.open("luarb.ppm", "w")
-
-  ppm:write(string.format("P3\n%u %u\n255\n", WIDTH, HEIGHT))
+  local ppm = string.format("P3\n%u %u\n255\n", WIDTH, HEIGHT)
 
   for y = 0, HEIGHT - 1 do
     for x = 0, WIDTH - 1 do
-      ppm:write(string.format("%u %u %u ",
+      ppm = ppm .. string.format("%u %u %u ",
         data[y][x].x * 255, 
         data[y][x].y * 255,
-        data[y][x].z * 255))
+        data[y][x].z * 255)
     end
-    ppm:write("\n")
+    ppm = ppm .. "\n"
   end
 
-  ppm:close()
+  return ppm
 end
 
 local function main ()
@@ -380,7 +377,7 @@ local function main ()
     end
   end
 
-  writeppm(data)
+  print(writeppm(data))
 end
 
 main()

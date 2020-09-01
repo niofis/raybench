@@ -113,11 +113,15 @@ fn wren_lang() -> (String, f64, String) {
     simply_run("Wren", "wren_cli wrenrb.wren", "wrenrb.ppm")
 }
 
+fn lua_lang() -> (String, f64, String) {
+    simply_run("Lua", "lua luarb.lua", "luarb.ppm")
+}
+
 fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
-        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren")
+        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren, lua")
         .subcommand(
             SubCommand::with_name("baseline")
             .about("builds and runs the baseline C implementation")
@@ -157,6 +161,8 @@ fn main() {
                         return Some(nim_lang());
                     } else if lang == "wren" {
                         return Some(wren_lang());
+                    } else if lang == "lua" {
+                        return Some(lua_lang());
                     } else {
                         return None;
                     }
