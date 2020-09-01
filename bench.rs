@@ -1,3 +1,13 @@
+#!/usr/bin/env run-cargo-script
+//! Install cargo-script first: 
+//! cargo install cargo-script
+//!
+//! ```cargo
+//! [dependencies]
+//! time = "0.1"
+//! clap = "2"
+//! ```
+
 extern crate clap;
 extern crate time;
 use clap::{App, AppSettings, Arg, SubCommand};
@@ -99,11 +109,15 @@ fn nim_lang() -> (String, f64, String) {
     compile_run("Nim", "nim c -d:release nimrb.nim", "./nimrb", "nimrb.ppm")
 }
 
+fn wren_lang() -> (String, f64, String) {
+    simply_run("Wren", "wren_cli wrenrb.wren", "wrenrb.ppm")
+}
+
 fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
-        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim")
+        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren")
         .subcommand(
             SubCommand::with_name("baseline")
             .about("builds and runs the baseline C implementation")
@@ -141,6 +155,8 @@ fn main() {
                         return Some(cs_lang());
                     } else if lang == "nim" {
                         return Some(nim_lang());
+                    } else if lang == "wren" {
+                        return Some(wren_lang());
                     } else {
                         return None;
                     }

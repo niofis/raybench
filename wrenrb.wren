@@ -170,9 +170,9 @@ class Hit {
 class RayBench {
     construct new() {
         _world = World.new()
-        _width = 640
-        _height = 360
-        _samples = 5
+        _width = 1280
+        _height = 720
+        _samples = 50
         _max_depth = 5
     }
 
