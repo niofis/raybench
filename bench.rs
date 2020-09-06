@@ -1,5 +1,5 @@
 #!/usr/bin/env run-cargo-script
-//! Install cargo-script first: 
+//! Install cargo-script first:
 //! cargo install cargo-script
 //!
 //! ```cargo
@@ -15,19 +15,15 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::process::Command;
 
-fn compile_run(
-    name: &str,
-    compile: &str,
-    run: &str,
-    ppm: &str,
-) -> (String, f64, String) {
+fn compile_run(name: &str, compile: &str, run: &str, ppm: &str) -> (String, f64, String) {
     println!("{}\nCompiling...", &name);
     let args: Vec<&str> = compile.split(" ").collect();
     Command::new(args[0])
         .args(&args[1..])
         .spawn()
         .expect("compilation did not succeed")
-        .wait().expect("wait");
+        .wait()
+        .expect("wait");
 
     println!("Running...");
     let start = time::precise_time_s();
@@ -76,12 +72,7 @@ fn baseline() -> (String, f64, String) {
 }
 
 fn c_lang() -> (String, f64, String) {
-    compile_run(
-        "C",
-        "gcc crb.c -o crb -std=c11 -O3 -lm",
-        "./crb",
-        "crb.ppm",
-    )
+    compile_run("C", "gcc crb.c -o crb -std=c11 -O3 -lm", "./crb", "crb.ppm")
 }
 
 fn rust_lang() -> (String, f64, String) {
@@ -143,7 +134,7 @@ fn main() {
         baseline();
     } else if let Some(matches) = matches.subcommand_matches("run") {
         if let Some(langs) = matches.value_of("implementations") {
-            let results: Vec<(String, f64, String)> = langs
+            let mut results: Vec<(String, f64, String)> = langs
                 .split(",")
                 .filter_map(|lang_str| {
                     let lang = lang_str.trim();
@@ -168,6 +159,7 @@ fn main() {
                     }
                 })
                 .collect();
+            results.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
             results
                 .iter()
                 .for_each(|(name, elapsed, _)| println!("{:7} \t {:.4}s", name, elapsed));
