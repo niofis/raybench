@@ -87,7 +87,7 @@ fn rust_lang() -> (String, f64, String) {
 fn rust_lang_2() -> (String, f64, String) {
     compile_run(
         "Rust Alt 2",
-        "cd rsrb_alt_2 && cargo builr --release",
+        "cd rsrb_alt_2 && cargo build --release",
         "./rsrb_alt_2/target/release/rsrb_alt_2",
         "rsrb_alt_2.ppm",
     )
