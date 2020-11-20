@@ -55,3 +55,10 @@ scalarb
 target/
 bin/
 obj/
+rsrb_alt
+swrb
+wrenrb.oom
+.vscode/tasks.json
+rsrb_alt_2/Cargo.lock
+webasmrt/Cargo.lock
+webasmrt/Cargo.lock

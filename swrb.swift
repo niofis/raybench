@@ -9,7 +9,7 @@ struct V3 {
   let z: Float
 
   func dot(_ rhs: V3) -> Float {
-    return self.x * rhs.x + self.y * rhs.y + self.z + rhs.z
+    return self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
   }
 
   func norm() -> Float {
@@ -17,7 +17,7 @@ struct V3 {
   }
 
   func unit() -> V3 {
-    self / self.norm()
+    return self / self.norm()
   }
 }
 
@@ -65,7 +65,7 @@ func random_dome(_ normal: V3) -> V3 {
                y: random.next() * 2.0 - 1.0,
                z: random.next() * 2.0 - 1.0)
     .unit()
-    if v.dot(normal) == 0 {
+    if v.dot(normal) >= 0 {
       return v
     }
   } while true
@@ -74,6 +74,12 @@ func random_dome(_ normal: V3) -> V3 {
 struct Ray {
   let origin: V3
   let direction: V3
+
+  /*init(origin: V3, direction: V3) {
+    self.origin = origin
+    self.direction = direction
+  }*/
+
   func point(_ t: Float) -> V3 {
     return V3(x: self.origin.x + self.direction.x * t,
               y: self.origin.y + self.direction.y * t,
@@ -81,11 +87,17 @@ struct Ray {
   }
 }
 
-struct Camera {
+class Camera {
   let eye: V3
   let lt: V3
   let rt: V3
   let lb: V3
+  init(eye: V3, lt: V3, rt: V3, lb: V3) {
+    self.eye = eye
+    self.lt = lt
+    self.rt = rt
+    self.lb = lb
+  }
 }
 
 struct Hit {
@@ -229,9 +241,7 @@ func writePpm(_ data: [V3]) {
   for y in 0..<Height {
     for x in 0..<Width {
       let pixel = data[y * Width + x]
-      print(Int(pixel.x * 255.99), terminator:"")
-      print(Int(pixel.y * 255.99), terminator:"")
-      print(Int(pixel.z * 255.99), terminator:"")
+      print("\(Int(pixel.x * 255.99)) \(Int(pixel.y * 255.99)) \(Int(pixel.z * 255.99))", terminator:" ")
     }
     print("");
   }
@@ -262,7 +272,6 @@ func main() {
       data.append(acc / Float(Samples))
     }
   }
-  
   writePpm(data)
 }
 

@@ -84,6 +84,15 @@ fn rust_lang() -> (String, f64, String) {
     )
 }
 
+fn rust_lang_2() -> (String, f64, String) {
+    compile_run(
+        "Rust Alt 2",
+        "cd rsrb_alt_2 && cargo builr --release",
+        "./rsrb_alt_2/target/release/rsrb_alt_2",
+        "rsrb_alt_2.ppm",
+    )
+}
+
 fn go_lang() -> (String, f64, String) {
     compile_run("Go", "go build gorb.go", "./gorb", "gorb.ppm")
 }
@@ -108,11 +117,20 @@ fn lua_lang() -> (String, f64, String) {
     simply_run("Lua", "lua luarb.lua", "luarb.ppm")
 }
 
+fn swift_lang() -> (String, f64, String) {
+    compile_run(
+        "Swift",
+        "swiftc swrb.swift -o swrb -Ounchecked",
+        "./swrb",
+        "swrb.ppm",
+    )
+}
+
 fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
-        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren, lua")
+        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren, lua, swift")
         .subcommand(
             SubCommand::with_name("baseline")
             .about("builds and runs the baseline C implementation")
@@ -142,6 +160,8 @@ fn main() {
                         return Some(c_lang());
                     } else if lang == "rust" {
                         return Some(rust_lang());
+                    } else if lang == "rust2" {
+                        return Some(rust_lang_2());
                     } else if lang == "go" {
                         return Some(go_lang());
                     } else if lang == "js" {
@@ -154,6 +174,8 @@ fn main() {
                         return Some(wren_lang());
                     } else if lang == "lua" {
                         return Some(lua_lang());
+                    } else if lang == "swift" {
+                        return Some(swift_lang());
                     } else {
                         return None;
                     }
