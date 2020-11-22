@@ -120,7 +120,7 @@ fn lua_lang() -> (String, f64, String) {
 fn swift_lang() -> (String, f64, String) {
     compile_run(
         "Swift",
-        "swiftc swrb.swift -o swrb -Ounchecked",
+        "swiftc swrb.swift -o swrb -Ounchecked -lm",
         "./swrb",
         "swrb.ppm",
     )
