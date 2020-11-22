@@ -75,11 +75,6 @@ struct Ray {
   let origin: V3
   let direction: V3
 
-  /*init(origin: V3, direction: V3) {
-    self.origin = origin
-    self.direction = direction
-  }*/
-
   func point(_ t: Float) -> V3 {
     return V3(x: self.origin.x + self.direction.x * t,
               y: self.origin.y + self.direction.y * t,
