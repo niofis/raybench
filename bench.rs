@@ -126,6 +126,15 @@ fn swift_lang() -> (String, f64, String) {
     )
 }
 
+fn zig_lang() -> (String, f64, String) {
+    compile_run(
+        "Zig",
+        "zig build-exe zigrb.zig -O ReleaseFast",
+        "./zigrb",
+        "zigrb.ppm",
+    )
+}
+
 fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
@@ -176,6 +185,8 @@ fn main() {
                         return Some(lua_lang());
                     } else if lang == "swift" {
                         return Some(swift_lang());
+                    } else if lang == "zig" {
+                        return Some(zig_lang());
                     } else {
                         return None;
                     }
