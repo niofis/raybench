@@ -117,6 +117,10 @@ fn lua_lang() -> (String, f64, String) {
     simply_run("Lua", "lua luarb.lua", "luarb.ppm")
 }
 
+fn luajit_lang() -> (String, f64, String) {
+    simply_run("LuaJIT", "luajit luarb.lua", "luarbjit.ppm")
+}
+
 fn swift_lang() -> (String, f64, String) {
     compile_run(
         "Swift",
@@ -183,6 +187,8 @@ fn main() {
                         return Some(wren_lang());
                     } else if lang == "lua" {
                         return Some(lua_lang());
+                    } else if lang == "luajit"{
+                        return Some(luajit_lang());
                     } else if lang == "swift" {
                         return Some(swift_lang());
                     } else if lang == "zig" {
