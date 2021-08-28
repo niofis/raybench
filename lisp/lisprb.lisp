@@ -29,20 +29,37 @@
     (z (zero) :type float-type))
 
   (declaim (inline v))
-  (defun v (x y z)
-    (%v (coerce x +float-type+)
-        (coerce y +float-type+)
-        (coerce z +float-type+))))
+  (defun v (x y z &optional output)
+    (declare (type (or vec-type null)))
+    (if output
+        (progn
+          (setf (v-x output) (coerce x +float-type+)
+                (v-y output) (coerce y +float-type+)
+                (v-z output) (coerce z +float-type+))
+          output)
+        (%v (coerce x +float-type+)
+            (coerce y +float-type+)
+            (coerce z +float-type+)))))
 
 (defmacro define-v-op (name (a b) op &optional scalar)
-  `(progn
-     (declaim (inline ,name))
-     (defun ,name (,a ,b)
-       (declare (type vec-type ,a)
-                (type ,(if scalar 'float-type 'vec-type) ,b))
-       (v ,@(loop for acc in '(v-x v-y v-z)
-                  collect `(,op (,acc ,a)
-                                ,(if scalar b `(,acc ,b ))))))))
+  (let ((destructive-name (intern (format nil "~A!" name))))
+    `(progn
+       (declaim (inline ,name ,destructive-name))
+       (defun ,name (,a ,b)
+         (declare (type vec-type ,a)
+                  (type ,(if scalar 'float-type 'vec-type) ,b))
+         (v ,@(loop for acc in '(v-x v-y v-z)
+                    collect `(,op (,acc ,a)
+                                  ,(if scalar b `(,acc ,b ))))))
+       (defun ,destructive-name (,a ,b)
+         "destructively modify the first argument, then return it."
+         (declare (type vec-type ,a)
+                  (type ,(if scalar 'float-type 'vec-type) ,b))
+         ,@(loop for acc in '(v-x v-y v-z)
+                 collect `(setf (,acc ,a)
+                                (,op (,acc ,a)
+                                     ,(if scalar b `(,acc ,b )))))
+         ,a))))
 
 (define-v-op v-add (v1 v2) +)
 (define-v-op v-sub (v1 v2) -)
@@ -51,7 +68,7 @@
 (define-v-op v-div (v1 v2) /)
 (define-v-op v-div-s (v1 s) / t)
 
-(declaim (inline v-dot v-norm v-unit))
+(declaim (inline v-dot v-norm v-unit v-unit!))
 (defun v-dot (v1 v2)
   (declare (type vec-type v1 v2))
   (+ (* (v-x v1) (v-x v2))
@@ -66,6 +83,10 @@
 (defun v-unit (v1)
   (declare (type vec-type v1))
   (v-div-s v1 (v-norm v1)))
+
+(defun v-unit! (v1)
+  (declare (type vec-type v1))
+  (v-div-s! v1 (v-norm v1)))
 
 (defstruct (ray
             (:conc-name ray-)
