@@ -8,26 +8,33 @@
 (defconstant +height+ 720)
 (defconstant +samples+ 50)
 (defconstant +max-depth+ 5)
-;; float type can be specified externally by defining this on command line
-;; with something like --eval "(defconstant +float-type+ 'double-float)"
-(defconstant +float-type+ (if (boundp '+float-type+)
-                              +float-type+
-                              'single-float))
+(defconstant +float-type+ 'single-float)
 (setf *read-default-float-format* +float-type+)
-(deftype float-type () +float-type+)
-(deftype vec-type () '(simple-array float-type (3)))
-
-
-(declaim (inline v v-x v-y v-z))
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (defstruct (vec (:conc-name v-)
-                  (:constructor v (x y z))
-                  (:type (vector float-type)))
-    x y z))
+  (deftype float-type () +float-type+)
+  (deftype vec-type () '(simple-array float-type (3)))
 
-(defconstant +zero+ (if (boundp '+zero+)
-                        +zero+
-                        (v 0.0 0.0 0.0)))
+  (declaim (inline zero))
+  (defun zero ()
+    (ecase +float-type+
+      (single-float 0.0s0)
+      (double-float 0.0d0)))
+
+  (declaim (inline %v v-x v-y v-z))
+  (defstruct (vec (:conc-name v-)
+                  (:constructor %v (x y z))
+                  (:type (vector float-type)))
+    (x (zero) :type float-type)
+    (y (zero) :type float-type)
+    (z (zero) :type float-type))
+
+  (declaim (inline v))
+  (defun v (x y z)
+    (%v (coerce x +float-type+)
+        (coerce y +float-type+)
+        (coerce z +float-type+))))
+
+(defconstant +zero+ (v 0 0 0))
 
 (defmacro define-v-op (name (a b) op &optional scalar)
   `(progn
