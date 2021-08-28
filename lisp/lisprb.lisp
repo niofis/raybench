@@ -238,10 +238,10 @@
          (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera))
                        (coerce +height+ +float-type+)))
          (data (loop
-                 for y from 0 below +height+
+                 for y fixnum from 0 below +height+
                  collect
                  (loop
-                   for x from 0 below +width+
+                   for x fixnum from 0 below +width+
                    collect
                    (let ((color #.(v 0 0 0))
                          (ray (ray-new (camera-eye camera) #.(v 0 0 0)))
