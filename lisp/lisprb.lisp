@@ -236,9 +236,9 @@
          (camera (world-camera world))
          (lt (camera-lt camera))
          (vdu (v-div-s (v-sub (camera-rt camera) (camera-lt camera))
-                       (float +width+ 1.0)))
+                       (coerce +width+ +float-type+)))
          (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera))
-                       (float +height+ 1.0)))
+                       (coerce +height+ +float-type+)))
          (data (loop
                  for y from 0 below +height+
                  collect
@@ -252,15 +252,15 @@
                        repeat +samples+
                        do (setf dir (v-add
                                      (v-add lt
-                                            (v-mul-s vdu (+ (float x 1.0)
+                                            (v-mul-s vdu (+ (coerce x +float-type+)
                                                             (randf))))
-                                     (v-mul-s vdv (+ (float y 1.0)
+                                     (v-mul-s vdv (+ (coerce y +float-type+)
                                                      (randf)))))
                           (setf (ray-direction ray)
                                 (v-unit (v-sub dir (ray-origin ray))))
                           (setf color (v-add color
                                              (trace-ray world ray 0))))
-                     (v-div-s color (float +samples+ 1.0)))))))
+                     (v-div-s color (coerce +samples+ +float-type+)))))))
     data))
 
 (defun main ()
