@@ -88,6 +88,7 @@
   (declare (type vec-type v1))
   (v-div-s! v1 (v-norm v1)))
 
+(declaim (inline ray-new))
 (defstruct (ray
             (:conc-name ray-)
             (:constructor ray-new (origin direction)))
@@ -102,6 +103,7 @@
                    dist)
           (ray-origin ray)))
 
+(declaim (inline sphere-new))
 (declaim (inline sphere-radius))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defstruct (sphere
@@ -113,6 +115,7 @@
     (is-light nil :type (or t nil))))
 
 
+(declaim (inline hit-new))
 (declaim (inline hit-distance))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defstruct (hit
@@ -121,8 +124,9 @@
     (distance 0.0 :type float-type)
     (point #.(v 0 0 0) :type vec-type)
     (normal #.(v 0 0 0) :type vec-type)
-    (sphere (sphere-new) :type sphere)))
+    (sphere (make-sphere) :type sphere)))
 
+(declaim (inline camera-new))
 (defstruct (camera
             (:conc-name camera-)
             (:constructor camera-new (eye lt rt lb)))
@@ -137,9 +141,10 @@
                           (hit-new 1e16 #.(v 0 0 0) #.(v 0 0 0)
                                    (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil))))
 
-(defun sphere-hit (sphere ray)
+(defun sphere-hit (sphere ray output)
   (declare (type sphere sphere)
-           (type ray ray))
+           (type ray ray)
+           (type hit output))
   (let* ((oc (v-sub (ray-origin ray) (sphere-center sphere)))
          (dir (ray-direction ray))
          (a (v-dot dir dir))
@@ -147,22 +152,27 @@
          (c (- (v-dot oc oc)
                (* (sphere-radius sphere) (sphere-radius sphere))))
          (dis (- (* b b) (* a c))))
+    (declare (dynamic-extent oc))
     (if (> dis 0.0)
         (let* ((e (sqrt dis))
                (t1 (/ (- (- b) e) a)))
           (if (> t1 0.007)
               (let ((point (ray-point ray t1)))
-                (hit-new t1 point
-                         (v-unit! (v-sub point (sphere-center sphere)))
-                         sphere))
+                (setf (hit-distance output) t1
+                      (hit-point output) point
+                      (hit-normal output) (v-unit! (v-sub point (sphere-center sphere)))
+                      (hit-sphere output) sphere)
+                output)
               (let ((t2 (/ (+ (- b) e) a)))
                 (if (> t2 0.007)
                     (let ((point (ray-point ray t2)))
-                      (hit-new t2 point
-                               (v-unit! (v-sub point (sphere-center sphere)))
-                               sphere))
-                    +no-hit+))))
-        +no-hit+)))
+                      (setf (hit-distance output) t2
+                            (hit-point output) point
+                            (hit-normal output) (v-unit! (v-sub point (sphere-center sphere)))
+                            (hit-sphere output) sphere)
+                      output)
+                    nil))))
+        nil)))
 
 
 (defun world-new ()
@@ -215,29 +225,40 @@
         unless (<= (v-dot p normal) 0.0)
           return p))
 
+
 (defun trace-ray (world ray depth)
   (declare (type ray ray) (type fixnum depth))
-  (let* ((hit (loop with hit = +no-hit+
-                    for sp in (world-spheres world)
-                    for res = (sphere-hit sp ray)
-                    when (and (not (eq res +no-hit+))
-                              (> (hit-distance res) 0.0001)
-                              (< (hit-distance res)
-                                 (hit-distance hit)))
-                      do (setf hit res)
-                    finally (return hit))))
+  (let* ((tmp (hit-new 1e16 #.(v 0 0 0) #.(v 0 0 0)
+                       (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil)))
+         (hit (hit-new 1e16 #.(v 0 0 0) #.(v 0 0 0)
+                       (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil)))
+         (nohit t))
+    (declare (dynamic-extent tmp hit))
+    (loop for sp in (world-spheres world)
+          for res = (sphere-hit sp ray tmp)
+          when (and res
+                    (> (hit-distance res) 0.0001)
+                    (< (hit-distance res)
+                       (hit-distance hit)))
+            do (setf nohit nil
+                     (hit-distance hit) (hit-distance res)
+                     (hit-point hit)    (hit-point res)
+                     (hit-normal hit)   (hit-normal res)
+                     (hit-sphere hit)   (hit-sphere res)))
     (cond
       ;; base case : ensure new vector is returned
-      ((or (eq hit +no-hit+)
+      ((or nohit
            (>= depth +max-depth+))
        (v 0 0 0))
       ;; base case : ensure new vector is returned
       ((sphere-is-light (hit-sphere hit))
        (copy-vec (sphere-color (hit-sphere hit))))
       (t
-       (let* ((nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit))))
+       (let* ((r (v 0 0 0))
+              (nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit) r)))
               (ncolor (trace-ray world nray (1+ depth)))
               (at (v-dot (ray-direction nray) (hit-normal hit))))
+         (declare (dynamic-extent r nray))
          (v-mul! (v-mul-s! ncolor at)
                  (sphere-color (hit-sphere hit))))))))
 
