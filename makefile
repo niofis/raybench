@@ -42,6 +42,13 @@ hsrb:
 gorb:
 	go build gorb.go
 
+SBCL = sbcl
+# SBCL = /home/masataro/.roswell/impls/x86-64/linux/sbcl/2.1.7/bin/sbcl
+.PHONY: lisprb
+lisprb:
+	$(SBCL) --disable-debugger --eval '(compile-file "lisprb.lisp")' --eval '(load "lisprb.fasl")' --eval '(lisprb::dump)'
+
+
 .PHONY: nimrb
 nimrb:
 	nim c --hints:off -d:release --passC:"-march=native -ffast-math"  nimrb.nim

@@ -256,4 +256,6 @@
                      (v-div-s color (float +samples+ 1.0)))))))
     (writeppm data)))
 
-(main)
+(defun dump ()
+  (sb-ext:save-lisp-and-die "lisprb" :toplevel #'main :executable t))
+
