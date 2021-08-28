@@ -34,8 +34,6 @@
         (coerce y +float-type+)
         (coerce z +float-type+))))
 
-(defconstant +zero+ (v 0 0 0))
-
 (defmacro define-v-op (name (a b) op &optional scalar)
   `(progn
      (declaim (inline ,name))
@@ -72,8 +70,8 @@
 (defstruct (ray
             (:conc-name ray-)
             (:constructor ray-new (origin direction)))
-  (origin +zero+ :type vec-type)
-  (direction +zero+ :type vec-type))
+  (origin #.(v 0 0 0) :type vec-type)
+  (direction #.(v 0 0 0) :type vec-type))
 
 (declaim (inline ray-point))
 (defun ray-point (ray dist)
@@ -88,9 +86,9 @@
   (defstruct (sphere
               (:conc-name sphere-)
               (:constructor sphere-new (center radius color is-light)))
-    (center +zero+ :type vec-type)
+    (center #.(v 0 0 0) :type vec-type)
     (radius 0.0 :type float-type)
-    (color +zero+ :type vec-type)
+    (color #.(v 0 0 0) :type vec-type)
     (is-light nil :type (or t nil))))
 
 
@@ -100,23 +98,23 @@
               (:conc-name hit-)
               (:constructor hit-new (distance point normal sphere)))
     (distance 0.0 :type float-type)
-    (point +zero+ :type vec-type)
-    (normal +zero+ :type vec-type)
+    (point #.(v 0 0 0) :type vec-type)
+    (normal #.(v 0 0 0) :type vec-type)
     (sphere (sphere-new) :type sphere)))
 
 (defstruct (camera
             (:conc-name camera-)
             (:constructor camera-new (eye lt rt lb)))
-  (eye +zero+ :type vec-type)
-  (lt (v -1.0 1.0 1.0) :type vec-type)
-  (rt (v 1.0 1.0 1.0) :type vec-type)
-  (lb (v -1.0 0.0 1.0) :type vec-type))
+  (eye #.(v 0 0 0) :type vec-type)
+  (lt #.(v -1.0 1.0 1.0) :type vec-type)
+  (rt #.(v 1.0 1.0 1.0) :type vec-type)
+  (lb #.(v -1.0 0.0 1.0) :type vec-type))
 
 
 (defconstant +no-hit+ (if (boundp '+no-hit+)
                           +no-hit+
-                          (hit-new 1e16 +zero+ +zero+
-                                   (sphere-new +zero+ 0.0 +zero+ nil))))
+                          (hit-new 1e16 #.(v 0 0 0) #.(v 0 0 0)
+                                   (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil))))
 
 (defun sphere-hit (sphere ray)
   (declare (type sphere sphere)
@@ -147,18 +145,18 @@
 
 
 (defun world-new ()
-  (list (camera-new (v 0.0 4.5 75.0)
-                    (v -8.0 9.0 50.0)
-                    (v 8.0 9.0 50.0)
-                    (v -8.0 0.0 50.0))
-        (list (sphere-new (v 0.0 -10002.0 0.0) 9999.0 (v 1.0 1.0 1.0) nil)
-              (sphere-new (v -10012.0 0.0 0.0) 9999.0 (v 1.0 0.0 0.0) nil)
-              (sphere-new (v 10012.0 0.0 0.0) 9999.0 (v 0.0 1.0 0.0) nil)
-              (sphere-new (v 0.0 0.0 -10012.0) 9999.0 (v 1.0 1.0 1.0) nil)
-              (sphere-new (v 0.0 10012.0 0.0) 9999.0 (v 1.0 1.0 1.0) t)
-              (sphere-new (v -5.0 0.0 2.0) 2.0 (v 1.0 1.0 0.0) nil)
-              (sphere-new (v 0.0 5.0 -1.0) 4.0 (v 1.0 0.0 0.0) nil)
-              (sphere-new (v 8.0 5.0 -1.0) 2.0 (v 0.0 0.0 1.0) nil))))
+  (list (camera-new #.(v 0.0 4.5 75.0)
+                    #.(v -8.0 9.0 50.0)
+                    #.(v 8.0 9.0 50.0)
+                    #.(v -8.0 0.0 50.0))
+        (list (sphere-new #.(v 0.0 -10002.0 0.0) 9999.0 #.(v 1.0 1.0 1.0) nil)
+              (sphere-new #.(v -10012.0 0.0 0.0) 9999.0 #.(v 1.0 0.0 0.0) nil)
+              (sphere-new #.(v 10012.0 0.0 0.0) 9999.0 #.(v 0.0 1.0 0.0) nil)
+              (sphere-new #.(v 0.0 0.0 -10012.0) 9999.0 #.(v 1.0 1.0 1.0) nil)
+              (sphere-new #.(v 0.0 10012.0 0.0) 9999.0 #.(v 1.0 1.0 1.0) t)
+              (sphere-new #.(v -5.0 0.0 2.0) 2.0 #.(v 1.0 1.0 0.0) nil)
+              (sphere-new #.(v 0.0 5.0 -1.0) 4.0 #.(v 1.0 0.0 0.0) nil)
+              (sphere-new #.(v 8.0 5.0 -1.0) 2.0 #.(v 0.0 0.0 1.0) nil))))
 
 (defun world-camera (world)
   (first world))
@@ -209,7 +207,7 @@
     (cond
       ((or (eq hit +no-hit+)
            (>= depth +max-depth+))
-       +zero+)
+       #.(v 0 0 0))
       ((sphere-is-light (hit-sphere hit))
        color)
       (t
@@ -245,8 +243,8 @@
                  (loop
                    for x from 0 below +width+
                    collect
-                   (let ((color +zero+)
-                         (ray (ray-new (camera-eye camera) +zero+))
+                   (let ((color #.(v 0 0 0))
+                         (ray (ray-new (camera-eye camera) #.(v 0 0 0)))
                          (dir nil))
                      (loop
                        repeat +samples+
