@@ -224,7 +224,7 @@
                    do (format ppm "~{~A ~}" (to-255 color)))
              (format ppm "~%"))))
 
-(defun main ()
+(defun produce-data ()
   (let* ((world (world-new))
          (camera (world-camera world))
          (lt (camera-lt camera))
@@ -254,7 +254,12 @@
                           (setf color (v-add color
                                              (trace-ray world ray 0))))
                      (v-div-s color (float +samples+ 1.0)))))))
-    (writeppm data)))
+    data))
+
+(defun main ()
+  (let ((data (time (produce-data))))
+    (time (writeppm data))))
+
 
 (defun dump ()
   (sb-ext:save-lisp-and-die "lisprb" :toplevel #'main :executable t))
