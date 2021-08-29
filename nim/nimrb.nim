@@ -1,4 +1,4 @@
-import strutils, math, random
+import strutils, math
 
 const 
   WIDTH = 1280
@@ -17,6 +17,18 @@ proc `/`*(a: V3, s: float32): V3 = (x: a.x / s, y: a.y / s, z: a.z / s)
 proc dot(a, b: V3): float32 = a.x * b.x + a.y * b.y + a.z * b.z
 proc norm(a: V3): float32 = sqrt(a.dot(a))
 proc unit(a: V3): V3 = a / a.norm
+
+type RandState = tuple[x: uint32, y: uint32, z: uint32, w: uint32]
+var randState:RandState = (x: 123456789'u32, y: 362436069'u32, z: 521288629'u32, w: 88675123'u32)
+const maxUint32 = 4294967295.0f;
+
+proc randf(): float32 =
+  let t:uint32 = randState.x xor (randState.x shl 11)
+  randState.x = randState.y
+  randState.y = randState.z
+  randState.z = randState.w
+  randState.w = randState.w xor (randState.w shr 19) xor (t xor (t shr 8 ))
+  randState.w.float32 / maxUint32
 
 type Ray = tuple[origin: V3, direction: V3]
 
@@ -89,7 +101,7 @@ proc sphit(sp: Sphere, ray: Ray): Hit =
 
   nohit
 
-proc rnd2(): float32 = (2.0 * rand(1.0)) - 1.0
+proc rnd2(): float32 = (2.0 * randf()) - 1.0
 
 proc rnd_dome(normal: V3): V3 =
   var d:float32
@@ -145,8 +157,6 @@ proc main() =
   let vdu = (world.camera.rt - world.camera.lt) / WIDTH.float32
   let vdv = (world.camera.lb - world.camera.lt) / HEIGHT.float32
 
-  randomize()
-  
   for y in 0..<HEIGHT:
     var row = newSeq[V3]()
     for x in 0..<WIDTH:
@@ -156,8 +166,8 @@ proc main() =
       ray.origin = world.camera.eye
 
       for i in 1..SAMPLES:
-        ray.direction = ((world.camera.lt + (vdu * (x.float32 + rand(1.0)) +
-                        vdv * (y.float32 + rand(1.0)))) -
+        ray.direction = ((world.camera.lt + (vdu * (x.float32 + randf()) +
+                        vdv * (y.float32 + randf()))) -
                         world.camera.eye).unit
         color = color + trace(world, ray, 0)
 
