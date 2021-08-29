@@ -2,7 +2,7 @@
   (:use :cl))
 (in-package :lisprb)
 
-(declaim (optimize (speed 3)))
+(declaim (optimize (speed 3) (safety 0)))
 
 (defconstant +width+ 1280)
 (defconstant +height+ 720)
