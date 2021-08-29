@@ -117,7 +117,6 @@
 
 (declaim (inline ray-new))
 (defstruct (ray
-            (:conc-name ray-)
             (:constructor ray-new (origin direction)))
   (origin #.(v 0 0 0) :type vec-type)
   (direction #.(v 0 0 0) :type vec-type))
@@ -135,7 +134,6 @@
 (declaim (inline sphere-radius))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defstruct (sphere
-              (:conc-name sphere-)
               (:constructor sphere-new (center radius color is-light)))
     (center #.(v 0 0 0) :type vec-type)
     (radius 0.0 :type float-type)
@@ -147,7 +145,6 @@
 (declaim (inline hit-distance))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defstruct (hit
-              (:conc-name hit-)
               (:constructor hit-new (distance point normal sphere)))
     (distance 0.0 :type float-type)
     (point #.(v 0 0 0) :type vec-type)
@@ -156,7 +153,6 @@
 
 (declaim (inline camera-new))
 (defstruct (camera
-            (:conc-name camera-)
             (:constructor camera-new (eye lt rt lb)))
   (eye #.(v 0 0 0) :type vec-type)
   (lt #.(v -1.0 1.0 1.0) :type vec-type)
