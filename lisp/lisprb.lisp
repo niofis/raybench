@@ -96,11 +96,12 @@
   (direction #.(v 0 0 0) :type vec-type))
 
 (declaim (inline ray-point))
-(defun ray-point (ray dist)
+(defun ray-point (ray dist &optional (v (v 0 0 0)))
   (declare (type ray)
-           (type float-type dist))
-  (v-add! (v-mul-s (ray-direction ray)
-                   dist)
+           (type float-type dist)
+           (type vec-type v))
+  (replace v (ray-direction ray))
+  (v-add! (v-mul-s! v dist)
           (ray-origin ray)))
 
 (declaim (inline sphere-new))
@@ -157,18 +158,22 @@
         (let* ((e (sqrt dis))
                (t1 (/ (- (- b) e) a)))
           (if (> t1 0.007)
-              (let ((point (ray-point ray t1)))
+              (let ((point (ray-point ray t1 (hit-point output)))
+                    (normal (hit-normal output)))
+                (replace normal point)
                 (setf (hit-distance output) t1
                       (hit-point output) point
-                      (hit-normal output) (v-unit! (v-sub point (sphere-center sphere)))
+                      (hit-normal output) (v-unit! (v-sub! normal (sphere-center sphere)))
                       (hit-sphere output) sphere)
                 output)
               (let ((t2 (/ (+ (- b) e) a)))
                 (if (> t2 0.007)
-                    (let ((point (ray-point ray t2)))
+                    (let ((point (ray-point ray t2 (hit-point output)))
+                          (normal (hit-normal output)))
+                      (replace normal point)
                       (setf (hit-distance output) t2
                             (hit-point output) point
-                            (hit-normal output) (v-unit! (v-sub point (sphere-center sphere)))
+                            (hit-normal output) (v-unit! (v-sub! normal (sphere-center sphere)))
                             (hit-sphere output) sphere)
                       output)
                     nil))))
@@ -244,11 +249,12 @@
                     (> (hit-distance res) 0.0001)
                     (< (hit-distance res)
                        (hit-distance hit)))
-            do (setf nohit nil
-                     (hit-distance hit) (hit-distance res)
-                     (hit-point hit)    (hit-point res)
-                     (hit-normal hit)   (hit-normal res)
-                     (hit-sphere hit)   (hit-sphere res)))
+            do (progn
+                 (setf nohit nil
+                       (hit-distance hit) (hit-distance res)
+                       (hit-sphere hit)   (hit-sphere res))
+                 (replace (hit-point hit) (hit-point res))
+                 (replace (hit-normal hit) (hit-normal res))))
     (cond
       ;; base case : ensure new vector is returned
       ((or nohit
