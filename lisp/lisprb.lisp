@@ -98,9 +98,9 @@
 (defun ray-point (ray dist)
   (declare (type ray)
            (type float-type dist))
-  (v-add (ray-origin ray)
-         (v-mul-s (ray-direction ray)
-                  dist)))
+  (v-add! (v-mul-s (ray-direction ray)
+                   dist)
+          (ray-origin ray)))
 
 (declaim (inline sphere-radius))
 (eval-when (:compile-toplevel :load-toplevel :execute)
@@ -153,13 +153,13 @@
           (if (> t1 0.007)
               (let ((point (ray-point ray t1)))
                 (hit-new t1 point
-                         (v-unit (v-sub point (sphere-center sphere)))
+                         (v-unit! (v-sub point (sphere-center sphere)))
                          sphere))
               (let ((t2 (/ (+ (- b) e) a)))
                 (if (> t2 0.007)
                     (let ((point (ray-point ray t2)))
                       (hit-new t2 point
-                               (v-unit (v-sub point (sphere-center sphere)))
+                               (v-unit! (v-sub point (sphere-center sphere)))
                                sphere))
                     +no-hit+))))
         +no-hit+)))
@@ -205,11 +205,13 @@
 (defun randf ()
   (/ (float (xor128) 1.0) #.(float #xffffffff 1.0)))
 
-(defun rnd-dome (normal)
+(declaim (inline rnd-dome))
+(defun rnd-dome (normal &optional (v (v 0 0 0)))
   (declare (type vec-type normal))
-  (loop for p = (v-unit (v (- (* 2.0 (randf)) 1.0)
-                           (- (* 2.0 (randf)) 1.0)
-                           (- (* 2.0 (randf)) 1.0)))
+  (loop for p = (v-unit! (v (- (* 2.0 (randf)) 1.0)
+                            (- (* 2.0 (randf)) 1.0)
+                            (- (* 2.0 (randf)) 1.0)
+                            v))
         unless (<= (v-dot p normal) 0.0)
           return p))
 
@@ -223,19 +225,21 @@
                               (< (hit-distance res)
                                  (hit-distance hit)))
                       do (setf hit res)
-                    finally (return hit)))
-         (color (sphere-color (hit-sphere hit))))
+                    finally (return hit))))
     (cond
+      ;; base case : ensure new vector is returned
       ((or (eq hit +no-hit+)
            (>= depth +max-depth+))
-       #.(v 0 0 0))
+       (v 0 0 0))
+      ;; base case : ensure new vector is returned
       ((sphere-is-light (hit-sphere hit))
-       color)
+       (copy-vec (sphere-color (hit-sphere hit))))
       (t
        (let* ((nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit))))
               (ncolor (trace-ray world nray (1+ depth)))
               (at (v-dot (ray-direction nray) (hit-normal hit))))
-         (v-mul color (v-mul-s ncolor at)))))))
+         (v-mul! (v-mul-s! ncolor at)
+                 (sphere-color (hit-sphere hit))))))))
 
 (declaim (inline to-255))
 (defun to-255 (color)
@@ -254,32 +258,32 @@
   (let* ((world (world-new))
          (camera (world-camera world))
          (lt (camera-lt camera))
-         (vdu (v-div-s (v-sub (camera-rt camera) (camera-lt camera))
-                       (coerce +width+ +float-type+)))
-         (vdv (v-div-s (v-sub (camera-lb camera) (camera-lt camera))
-                       (coerce +height+ +float-type+)))
+         (vdu (v-div-s! (v-sub (camera-rt camera) (camera-lt camera))
+                        (coerce +width+ +float-type+)))
+         (vdv (v-div-s! (v-sub (camera-lb camera) (camera-lt camera))
+                        (coerce +height+ +float-type+)))
          (data (loop
                  for y fixnum from 0 below +height+
                  collect
                  (loop
                    for x fixnum from 0 below +width+
                    collect
-                   (let ((color #.(v 0 0 0))
+                   (let ((color (v 0 0 0))
                          (ray (ray-new (camera-eye camera) #.(v 0 0 0)))
                          (dir nil))
                      (loop
                        repeat +samples+
-                       do (setf dir (v-add
-                                     (v-add lt
-                                            (v-mul-s vdu (+ (coerce x +float-type+)
-                                                            (randf))))
+                       do (setf dir (v-add!
+                                     (v-add! (v-mul-s vdu (+ (coerce x +float-type+)
+                                                             (randf)))
+                                             lt)
                                      (v-mul-s vdv (+ (coerce y +float-type+)
                                                      (randf)))))
                           (setf (ray-direction ray)
-                                (v-unit (v-sub dir (ray-origin ray))))
-                          (setf color (v-add color
-                                             (trace-ray world ray 0))))
-                     (v-div-s color (coerce +samples+ +float-type+)))))))
+                                (v-unit! (v-sub! dir (ray-origin ray))))
+                          (setf color (v-add! color
+                                              (trace-ray world ray 0))))
+                     (v-div-s! color (coerce +samples+ +float-type+)))))))
     data))
 
 (defun main ()
