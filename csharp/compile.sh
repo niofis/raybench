@@ -1,3 +1,2 @@
-cd csrb
+cd csharp
 dotnet build --configuration Release
-cd -

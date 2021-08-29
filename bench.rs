@@ -63,84 +63,81 @@ fn simply_run(name: &str, run: &str, ppm: &str) -> (String, f64, String) {
     (name.to_string(), elapsed, ppm_string.to_string())
 }
 
-fn baseline() -> (String, f64, String) {
-    compile_run(
-        "Baseline (C lang)",
-        "gcc crb.c -o baseline -std=c11 -O3 -lm",
-        "./baseline",
-        "baseline.ppm",
-    )
-}
-
 fn c_lang() -> (String, f64, String) {
-    compile_run("C", "gcc crb.c -o crb -std=c11 -O3 -lm", "./crb", "crb.ppm")
+    compile_run("C", "sh ./c/compile.sh", "sh ./c/run.sh", "./tmp/crb.ppm")
 }
 
 fn rust_lang() -> (String, f64, String) {
     compile_run(
         "Rust Alt",
-        "rustc rsrb_alt.rs -o rsrb_alt -O",
-        "./rsrb_alt",
-        "rsrb_alt.ppm",
-    )
-}
-
-fn rust_lang_2() -> (String, f64, String) {
-    compile_run(
-        "Rust Alt 2",
-        "rustc rsrb_alt_2.rs -o rsrb_alt_2 -O",
-        "./rsrb_alt_2",
-        "rsrb_alt_2.ppm",
+        "sh ./rust/compile.sh",
+        "sh ./rust/run.sh",
+        "./tmp/rsrb_alt.ppm",
     )
 }
 
 fn go_lang() -> (String, f64, String) {
-    compile_run("Go", "go build gorb.go", "./gorb", "gorb.ppm")
+    compile_run(
+        "Go",
+        "sh ./go/compile.sh",
+        "sh ./go/run.sh",
+        "./tmp/gorb.ppm",
+    )
 }
 
 fn haxe_lang() -> (String, f64, String) {
-    simply_run("Haxe", "haxe -x Haxerb", "haxerb.ppm")
+    simply_run("Haxe", "sh ./haxe/run.sh", "./tmp/haxerb.ppm")
 }
 
 fn js_lang() -> (String, f64, String) {
-    simply_run("Javascript", "node jsrb.js", "jsrb.ppm")
+    simply_run("Javascript", "sh ./javascript/run.sh", "./tmp/jsrb.ppm")
 }
 
 fn cs_lang() -> (String, f64, String) {
-    compile_run("C#", "sh ./csrb/compile.sh", "sh ./csrb/run.sh", "csrb.ppm")
+    compile_run(
+        "C#",
+        "sh ./csharp/compile.sh",
+        "sh ./csharp/run.sh",
+        "./tmp/csrb.ppm",
+    )
 }
 
 fn nim_lang() -> (String, f64, String) {
-    compile_run("Nim", "nim c -d:release nimrb.nim", "./nimrb", "nimrb.ppm")
+    compile_run(
+        "Nim",
+        "sh ./nim/compile.sh",
+        "sh ./nim/run.sh",
+        "./tmp/nimrb.ppm",
+    )
 }
 
 fn wren_lang() -> (String, f64, String) {
-    simply_run("Wren", "wren_cli wrenrb.wren", "wrenrb.ppm")
+    simply_run("Wren", "sh ./wren/run.sh", "./tmp/wrenrb.ppm")
 }
 
 fn lua_lang() -> (String, f64, String) {
-    simply_run("Lua", "lua luarb.lua", "luarb.ppm")
+    simply_run("Lua", "sh ./lua/run.sh", "./tmp/luarb.ppm")
 }
 
 fn luajit_lang() -> (String, f64, String) {
-    simply_run("LuaJIT", "luajit luarb.lua", "luarbjit.ppm")
+    simply_run("LuaJIT", "sh ./lua/run_jit.sh", "./tmp/luarbjit.ppm")
 }
 
 fn swift_lang() -> (String, f64, String) {
     compile_run(
         "Swift",
-        "swiftc swrb.swift -o swrb -Ounchecked -lm",
-        "./swrb",
-        "swrb.ppm",
+        "sh ./swift/compile.sh",
+        "sh ./swift/run.sh",
+        "./tmp/swrb.ppm",
     )
 }
 
 fn zig_lang() -> (String, f64, String) {
     compile_run(
         "Zig",
-        "zig build-exe zigrb.zig -O ReleaseFast",
-        "./zigrb",
-        "zigrb.ppm",
+        "sh ./zig/compile.sh",
+        "sh ./zig/run.sh",
+        "./tmp/zigrb.ppm",
     )
 }
 
@@ -149,10 +146,6 @@ fn main() {
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
         .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren, lua, luajit, swift, haxe")
-        .subcommand(
-            SubCommand::with_name("baseline")
-            .about("builds and runs the baseline C implementation")
-        )
         .subcommand(
             SubCommand::with_name("run")
                 .about("runs and compares the implementations specified")
@@ -166,9 +159,7 @@ fn main() {
         .setting(AppSettings::ArgRequiredElseHelp)
         .get_matches();
 
-    if let Some(_matches) = matches.subcommand_matches("baseline") {
-        baseline();
-    } else if let Some(matches) = matches.subcommand_matches("run") {
+    if let Some(matches) = matches.subcommand_matches("run") {
         if let Some(langs) = matches.value_of("implementations") {
             let mut results: Vec<(String, f64, String)> = langs
                 .split(",")
@@ -178,8 +169,6 @@ fn main() {
                         return Some(c_lang());
                     } else if lang == "rust" {
                         return Some(rust_lang());
-                    } else if lang == "rust2" {
-                        return Some(rust_lang_2());
                     } else if lang == "go" {
                         return Some(go_lang());
                     } else if lang == "haxe" {
@@ -194,7 +183,7 @@ fn main() {
                         return Some(wren_lang());
                     } else if lang == "lua" {
                         return Some(lua_lang());
-                    } else if lang == "luajit"{
+                    } else if lang == "luajit" {
                         return Some(luajit_lang());
                     } else if lang == "swift" {
                         return Some(swift_lang());

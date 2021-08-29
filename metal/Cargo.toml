@@ -1,0 +1,15 @@
+[package]
+name = "metalrb"
+version = "0.1.0"
+authors = ["Enrique <niofis@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+metal = "0.21"
+block = "0.1.6"
+
+[dependencies.objc]
+version = "0.2.4"
+features = ["objc_exception"]
