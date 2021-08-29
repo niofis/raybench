@@ -1,6 +1,7 @@
 #!/usr/bin/env run-cargo-script
 //! Install cargo-script first:
 //! cargo install cargo-script
+//! cargo script bench.rs
 //!
 //! ```cargo
 //! [dependencies]
@@ -97,6 +98,10 @@ fn go_lang() -> (String, f64, String) {
     compile_run("Go", "go build gorb.go", "./gorb", "gorb.ppm")
 }
 
+fn haxe_lang() -> (String, f64, String) {
+    simply_run("Haxe", "haxe -x Haxerb", "haxerb.ppm")
+}
+
 fn js_lang() -> (String, f64, String) {
     simply_run("Javascript", "node jsrb.js", "jsrb.ppm")
 }
@@ -143,7 +148,7 @@ fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
-        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren, lua, swift")
+        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren, lua, luajit, swift, haxe")
         .subcommand(
             SubCommand::with_name("baseline")
             .about("builds and runs the baseline C implementation")
@@ -177,6 +182,8 @@ fn main() {
                         return Some(rust_lang_2());
                     } else if lang == "go" {
                         return Some(go_lang());
+                    } else if lang == "haxe" {
+                        return Some(haxe_lang());
                     } else if lang == "js" {
                         return Some(js_lang());
                     } else if lang == "cs" {

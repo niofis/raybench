@@ -1,9 +1,26 @@
-local math = require("math")
-
 local WIDTH = 1280
 local HEIGHT = 720
 local SAMPLES = 50
 local MAX_DEPTH = 5
+
+local bit32 = bit or bit32
+
+local Rand = {
+  x = 123456789,
+  y = 362436069,
+  z = 521288629,
+  w = 88675123,
+  max = 4294967295,
+}
+
+function Rand.next()
+  local t = bit32.bxor(Rand.x, bit32.lshift(Rand.x, 11))
+  Rand.x = Rand.y
+  Rand.y = Rand.z
+  Rand.z = Rand.w
+  Rand.w = bit32.bxor(Rand.w, bit32.rshift(Rand.w, 19), bit32.bxor(t, bit32.rshift(t, 8)))
+  return bit32.rshift(Rand.w, 1)*2.0 / Rand.max
+end
 
 local Vector3 = {}
 Vector3.__index = Vector3
@@ -20,55 +37,23 @@ function Vector3.new (x, y, z)
 end
 
 function Vector3:__add (v)
-  local r = Vector3.new()
-
-  r.x = self.x + v.x
-  r.y = self.y + v.y
-  r.z = self.z + v.z
-
-  return r
+  return Vector3.new(self.x + v.x, self.y + v.y, self.z + v.z)
 end
 
 function Vector3:__sub (v)
-  local r = Vector3.new()
-
-  r.x = self.x - v.x
-  r.y = self.y - v.y
-  r.z = self.z - v.z
-
-  return r
+  return Vector3.new(self.x - v.x, self.y - v.y, self.z - v.z)
 end
 
-function Vector3:__mul (v)
-  local r = Vector3.new()
-
-  if type(v) == "table" then 
-    r.x = self.x * v.x
-    r.y = self.y * v.y
-    r.z = self.z * v.z
-  elseif type(v) == "number" then
-    r.x = self.x * v
-    r.y = self.y * v
-    r.z = self.z * v
-  end
-
-  return r
+function Vector3:__mul (s)
+  return Vector3.new(self.x * s, self.y * s, self.z * s)
 end
 
-function Vector3:__div (v)
-  local r = Vector3.new()
+function Vector3:mulv(v)
+  return Vector3.new(self.x * v.x, self.y * v.y, self.z * v.z)
+end
 
-  if type(v) == "table" then 
-    r.x = self.x / v.x
-    r.y = self.y / v.y
-    r.z = self.z / v.z
-  elseif type(v) == "number" then
-    r.x = self.x / v
-    r.y = self.y / v
-    r.z = self.z / v
-  end
-
-  return r
+function Vector3:__div (s)
+  return Vector3.new(self.x / s, self.y / s, self.z / s)
 end
 
 function Vector3:dot (v)
@@ -271,9 +256,9 @@ local function rnd_dome (nrml)
   local d
 
   repeat
-    p.x = 2 * math.random() - 1
-    p.y = 2 * math.random() - 1
-    p.z = 2 * math.random() - 1
+    p.x = 2 * Rand.next() - 1
+    p.y = 2 * Rand.next() - 1
+    p.z = 2 * Rand.next() - 1
 
     p = p:unit()
 
@@ -311,7 +296,7 @@ local function trace (world, ray, depth)
 
       local at = nray.direction:dot(hit.normal)
 
-      color = color * ncolor * at
+      color = color:mulv(ncolor * at)
     end
   end
 
@@ -324,28 +309,22 @@ end
 
 local function writeppm (data)
   local ppm = string.format("P3\n%u %u\n255\n", WIDTH, HEIGHT)
+  io.write(ppm)
 
   for y = 0, HEIGHT - 1 do
     for x = 0, WIDTH - 1 do
-      ppm = ppm .. string.format("%u %u %u ",
+      io.write(string.format("%u %u %u ",
         data[y][x].x * 255, 
         data[y][x].y * 255,
-        data[y][x].z * 255)
+        data[y][x].z * 255))
     end
-    ppm = ppm .. "\n"
+    io.write("\n")
   end
-
-  return ppm
 end
 
 local function main ()
-
-
-
   local data = {}
-
   local world = World.new()
-
   local vdu = (world.camera.rt - world.camera.lt) / WIDTH
   local vdv = (world.camera.lb - world.camera.lt) / HEIGHT
 
@@ -358,26 +337,20 @@ local function main ()
       ray.origin = world.camera.eye
 
       for i = 0, SAMPLES-1 do
-
         ray.direction = world.camera.lt +
-          (vdu * (x + math.random())) +
-          (vdv * (y + math.random()))
-
+          (vdu * (x + Rand.next())) +
+          (vdv * (y + Rand.next()))
 
         ray.direction = ray.direction - ray.origin
-
         ray.direction = ray.direction:unit()
-
         color = color + trace(world, ray, 0)
       end
 
-      color = color / SAMPLES
-
-      data[y][x] = color
+      data[y][x] = color / SAMPLES
     end
   end
 
-  print(writeppm(data))
+  writeppm(data)
 end
 
 main()

@@ -10,5 +10,6 @@
 	dotnet-sdk_5
 	lua
 	luajit
+	haxe
     ];
 }

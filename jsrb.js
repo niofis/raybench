@@ -1,6 +1,5 @@
-'use strict';
+"use strict";
 
-const fs = require('fs');
 const WIDTH = 1280;
 const HEIGHT = 720;
 const SAMPLES = 50;
@@ -21,36 +20,16 @@ class Vector3 {
     return new Vector3(this.x - v.x, this.y - v.y, this.z - v.z);
   }
 
-  mul(v) {
-    let r = new Vector3();
-
-    if (typeof v == 'object') {
-      r.x = this.x * v.x;
-      r.y = this.y * v.y;
-      r.z = this.z * v.z;
-    } else if (typeof v == 'number') {
-      r.x = this.x * v;
-      r.y = this.y * v;
-      r.z = this.z * v;
-    }
-
-    return r;
+  mulv(v) {
+    return new Vector3(this.x * v.x, this.y * v.y, this.z * v.z);
   }
 
-  div(v) {
-    let r = new Vector3();
+  muls(s) {
+    return new Vector3(this.x * s, this.y * s, this.z * s);
+  }
 
-    if (typeof v == 'object') {
-      r.x = this.x / v.x;
-      r.y = this.y / v.y;
-      r.z = this.z / v.z;
-    } else if (typeof v == 'number') {
-      r.x = this.x / v;
-      r.y = this.y / v;
-      r.z = this.z / v;
-    }
-
-    return r;
+  div(s) {
+    return new Vector3(this.x / s, this.y / s, this.z / s);
   }
 
   dot(v) {
@@ -73,7 +52,7 @@ class Ray {
   }
 
   point(dist) {
-    return this.origin.add(this.direction.mul(dist));
+    return this.origin.add(this.direction.muls(dist));
   }
 }
 
@@ -144,35 +123,15 @@ class Sphere {
 class World {
   constructor() {
     this.camera = new Camera();
-    this.spheres = [];
-
-    this.spheres.push(
-      new Sphere(new Vector3(0, -10002, 0), 9999, new Vector3(1, 1, 1), false)
-    );
-
-    this.spheres.push(
-      new Sphere(new Vector3(-10012, 0, 0), 9999, new Vector3(1, 0, 0), false)
-    );
-
-    this.spheres.push(
-      new Sphere(new Vector3(10012, 0, 0), 9999, new Vector3(0, 1, 0), false)
-    );
-
-    this.spheres.push(
-      new Sphere(new Vector3(0, 0, -10012), 9999, new Vector3(1, 1, 1), false)
-    );
-
-    this.spheres.push(
-      new Sphere(new Vector3(0, 10012, 0), 9999, new Vector3(1, 1, 1), true)
-    );
-
-    this.spheres.push(
-      new Sphere(new Vector3(-5, 0, 2), 2, new Vector3(1, 1, 0), false)
-    );
-
-    this.spheres.push(
-      new Sphere(new Vector3(0, 5, -1), 4, new Vector3(1, 0, 0), false)
-    );
+    this.spheres = [
+      new Sphere(new Vector3(0, -10002, 0), 9999, new Vector3(1, 1, 1), false),
+      new Sphere(new Vector3(-10012, 0, 0), 9999, new Vector3(1, 0, 0), false),
+      new Sphere(new Vector3(10012, 0, 0), 9999, new Vector3(0, 1, 0), false),
+      new Sphere(new Vector3(0, 0, -10012), 9999, new Vector3(1, 1, 1), false),
+      new Sphere(new Vector3(0, 10012, 0), 9999, new Vector3(1, 1, 1), true),
+      new Sphere(new Vector3(-5, 0, 2), 2, new Vector3(1, 1, 0), false),
+      new Sphere(new Vector3(0, 5, -1), 4, new Vector3(1, 0, 0), false),
+    ];
 
     this.spheres.push(
       new Sphere(new Vector3(8, 5, -1), 2, new Vector3(0, 0, 1), false)
@@ -188,7 +147,7 @@ function rand_new() {
   let t = 0;
   let max = 4294967295;
 
-  return function() {
+  return function () {
     t = (x ^ (x << 11)) >>> 0;
     x = y;
     y = z;
@@ -220,7 +179,7 @@ function trace(randf, world, ray, depth) {
   let hit = new Hit(1e15);
   let sp;
 
-  world.spheres.forEach(s => {
+  world.spheres.forEach((s) => {
     let lh = s.hit(ray);
 
     if (lh && lh.dist > 0.0001 && lh.dist < hit.dist) {
@@ -238,7 +197,7 @@ function trace(randf, world, ray, depth) {
       let ncolor = trace(randf, world, nray, depth + 1);
       let at = nray.direction.dot(hit.normal);
 
-      color = color.mul(ncolor.mul(at));
+      color = color.mulv(ncolor.muls(at));
     }
   }
 
@@ -260,7 +219,7 @@ function writeppm(data) {
       let b = Math.floor(pixel.z * 255.99);
       process.stdout.write(`${r} ${g} ${b} `);
     }
-    process.stdout.write('\n');
+    process.stdout.write("\n");
   }
 }
 
@@ -269,7 +228,7 @@ function writeppm(data) {
   const vdu = world.camera.rt.sub(world.camera.lt).div(WIDTH);
   const vdv = world.camera.lb.sub(world.camera.lt).div(HEIGHT);
   const randf = rand_new();
-  const data = [...Array(WIDTH * HEIGHT).keys()].map(pixel => {
+  const data = [...Array(WIDTH * HEIGHT).keys()].map((pixel) => {
     const x = pixel % WIDTH;
     const y = Math.floor(pixel / WIDTH);
 
@@ -278,7 +237,7 @@ function writeppm(data) {
         let ray = new Ray();
         ray.origin = world.camera.eye;
         ray.direction = world.camera.lt.add(
-          vdu.mul(x + randf()).add(vdv.mul(y + randf()))
+          vdu.muls(x + randf()).add(vdv.muls(y + randf()))
         );
 
         ray.direction = ray.direction.sub(ray.origin).unit();
