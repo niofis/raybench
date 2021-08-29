@@ -228,12 +228,16 @@
 
 (defun trace-ray (world ray depth)
   (declare (type ray ray) (type fixnum depth))
-  (let* ((tmp (hit-new 1e16 #.(v 0 0 0) #.(v 0 0 0)
+  (let* ((v1 (%v 0.0 0.0 0.0))
+         (v2 (%v 0.0 0.0 0.0))
+         (v3 (%v 0.0 0.0 0.0))
+         (v4 (%v 0.0 0.0 0.0))
+         (tmp (hit-new 1e16 v1 v2
                        (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil)))
-         (hit (hit-new 1e16 #.(v 0 0 0) #.(v 0 0 0)
+         (hit (hit-new 1e16 v3 v4
                        (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil)))
          (nohit t))
-    (declare (dynamic-extent tmp hit))
+    (declare (dynamic-extent tmp hit v1 v2 v3 v4))
     (loop for sp in (world-spheres world)
           for res = (sphere-hit sp ray tmp)
           when (and res
