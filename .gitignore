@@ -62,3 +62,6 @@ wrenrb.oom
 rsrb_alt_2/Cargo.lock
 webasmrt/Cargo.lock
 webasmrt/Cargo.lock
+zig-cache/
+zigrb
+.shell.nix.swp

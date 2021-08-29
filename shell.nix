@@ -1,6 +1,6 @@
-{ pkgs ? import <nixpkgs> {} }:
-  pkgs.mkShell {
-    nativeBuildInputs = with pkgs.buildPackages; [
+with (import (fetchTarball https://github.com/NixOS/nixpkgs/archive/master.tar.gz) {});
+mkShell {
+    nativeBuildInputs = with buildPackages; [
         rustc
 	cargo
 	nodejs-16_x
@@ -11,5 +11,6 @@
 	lua
 	luajit
 	haxe
+	swift
     ];
 }
