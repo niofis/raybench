@@ -11,7 +11,7 @@
 (defconstant +float-type+ 'single-float)
 (setf *read-default-float-format* +float-type+)
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (deftype float-type () +float-type+)
+  (deftype float-type (&optional low high) `(,+float-type+ ,low ,high))
   (deftype vec-type () '(simple-array float-type (3)))
 
   (declaim (inline zero))
@@ -75,10 +75,37 @@
      (* (v-y v1) (v-y v2))
      (* (v-z v1) (v-z v2))))
 
+(eval-when (:compile-toplevel)
+  (sb-c:defknown (%sqrt)
+      ((single-float 0.0s0)) (single-float 0.0s0)
+      (sb-c:movable sb-c:foldable sb-c:flushable))
+
+  (sb-c:define-vop (fsqrt/s)
+    (:args (x :scs (sb-vm::single-reg)))
+    (:results (y :scs (sb-vm::single-reg)))
+    (:translate %sqrt)
+    (:policy :fast-safe)
+    (:arg-types single-float)
+    (:result-types single-float)
+    (:note "inline float arithmetic")
+    (:vop-var vop)
+    (:save-p :compute-only)
+    (:generator 1
+                (unless (SB-C:location= x y)
+                  (SB-C::inst SB-X86-64-ASM::xorpd y y))
+                (SB-VM::note-float-location 'sqrt vop x)
+                (SB-C::inst SB-X86-64-ASM::sqrtss y x))))
+
+(defun %sqrt (x) (%sqrt x))
+
 (defun v-norm (v1)
   (declare (type vec-type v1))
   (let ((d (v-dot v1 v1)))
-    (if (minusp d) 0.0 (sqrt d))))
+    (declare (type (single-float 0.0)))
+    (%sqrt d)))
+
+(disassemble #'%sqrt)
+(disassemble #'v-norm)
 
 (defun v-unit (v1)
   (declare (type vec-type v1))
