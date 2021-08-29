@@ -161,9 +161,8 @@
               (let ((point (ray-point ray t1 (hit-point output)))
                     (normal (hit-normal output)))
                 (replace normal point)
+                (v-unit! (v-sub! normal (sphere-center sphere)))
                 (setf (hit-distance output) t1
-                      (hit-point output) point
-                      (hit-normal output) (v-unit! (v-sub! normal (sphere-center sphere)))
                       (hit-sphere output) sphere)
                 output)
               (let ((t2 (/ (+ (- b) e) a)))
@@ -171,9 +170,8 @@
                     (let ((point (ray-point ray t2 (hit-point output)))
                           (normal (hit-normal output)))
                       (replace normal point)
+                      (v-unit! (v-sub! normal (sphere-center sphere)))
                       (setf (hit-distance output) t2
-                            (hit-point output) point
-                            (hit-normal output) (v-unit! (v-sub! normal (sphere-center sphere)))
                             (hit-sphere output) sphere)
                       output)
                     nil))))
