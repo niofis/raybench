@@ -1,3 +1,7 @@
+(defpackage :lisprb
+  (:use :cl))
+(in-package :lisprb)
+
 (declaim (optimize (speed 3)))
 
 (defconstant +width+ 1280)
