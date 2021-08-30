@@ -7,19 +7,21 @@ object scalarb {
   val SAMPLES = 50
   val MAX_DEPTH = 5
 
-  var rndX = 123456789.toLong
-  var rndY = 362436069.toLong 
-  var rndZ = 521288629.toLong
-  var rndW = 88675123.toLong
-  val rndMax = 0x7FFFFFFF
+  object Random {
+    var x = 123456789.toLong
+    var y = 362436069.toLong 
+    var z = 521288629.toLong
+    var w = 88675123.toLong
+    val max = 0x7FFFFFFF
 
-  def randf(): Float = {
-    val t = rndX ^ (rndX << 11)
-    rndX = rndY
-    rndY = rndZ
-    rndZ = rndW
-    rndW = (rndW ^ (rndW >> 19) ^(t ^ (t >> 8)))
-    (rndW & rndMax).toFloat / rndMax.toFloat
+    def next(): Float = {
+      val t = Random.x ^ (Random.x << 11)
+      Random.x = Random.y
+      Random.y = Random.z
+      Random.z = Random.w
+      Random.w = (Random.w ^ (Random.w >> 19) ^(t ^ (t >> 8)))
+      (Random.w & Random.max).toFloat / Random.max.toFloat
+    } 
   }
 
   val spheres = Array(
@@ -106,9 +108,9 @@ object scalarb {
   def rndDome(normal: Vector3): Vector3 = {
     var p = Vector3.Zero
     do {
-      val px = 2 * randf() - 1
-      val py = 2 * randf() - 1
-      val pz = 2 * randf() - 1
+      val px = 2 * Random.next() - 1
+      val py = 2 * Random.next() - 1
+      val pz = 2 * Random.next() - 1
       p = Vector3(px, py, pz).unit
     } while (p.dot(normal) < 0)
     p
@@ -162,7 +164,7 @@ object scalarb {
 
     for (y <- 0 until HEIGHT; x <- 0 until WIDTH) {
       data(y)(x) = (0 until SAMPLES).map { _ =>
-        val direction = cam.lt + (vdu * (x + randf()) + vdv * (y + randf()))
+        val direction = cam.lt + (vdu * (x + Random.next()) + vdv * (y + Random.next()))
         val ray = Ray(cam.eye, (direction - cam.eye).unit)
         trace(ray, 0)
       }.fold(Vector3.Zero)(_ + _) / SAMPLES.toFloat
