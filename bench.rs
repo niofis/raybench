@@ -85,6 +85,24 @@ fn go_lang() -> (String, f64, String) {
     )
 }
 
+fn java_lang() -> (String, f64, String) {
+    compile_run(
+        "Java",
+        "sh ./java/compile.sh",
+        "sh ./java/run.sh",
+        "./tmp/javarb.ppm",
+    )
+}
+
+fn scala_lang() -> (String, f64, String) {
+    compile_run(
+        "Scala",
+        "sh ./scala/compile.sh",
+        "sh ./scala/run.sh",
+        "./tmp/scalarb.ppm",
+    )
+}
+
 fn haxe_lang() -> (String, f64, String) {
     simply_run("Haxe", "sh ./haxe/run.sh", "./tmp/haxerb.ppm")
 }
@@ -145,7 +163,7 @@ fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
-        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren, lua, luajit, swift, haxe")
+        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren, lua, luajit, swift, haxe, java, scala")
         .subcommand(
             SubCommand::with_name("run")
                 .about("runs and compares the implementations specified")
@@ -175,6 +193,8 @@ fn main() {
                         return Some(haxe_lang());
                     } else if lang == "js" {
                         return Some(js_lang());
+                    } else if lang == "java" {
+                        return Some(java_lang());
                     } else if lang == "cs" {
                         return Some(cs_lang());
                     } else if lang == "nim" {
@@ -187,6 +207,8 @@ fn main() {
                         return Some(luajit_lang());
                     } else if lang == "swift" {
                         return Some(swift_lang());
+                    } else if lang == "scala" {
+                        return Some(scala_lang());
                     } else if lang == "zig" {
                         return Some(zig_lang());
                     } else {

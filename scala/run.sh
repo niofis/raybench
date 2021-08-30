@@ -1,0 +1,2 @@
+cd scala
+scala scalarb

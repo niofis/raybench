@@ -1,0 +1,2 @@
+cd java
+java javarb

@@ -1,6 +1,3 @@
-import java.io.PrintWriter
-import scala.util.Random
-
 object scalarb {
 
   type OrdType = Float
@@ -9,6 +6,21 @@ object scalarb {
   val HEIGHT = 720
   val SAMPLES = 50
   val MAX_DEPTH = 5
+
+  var rndX = 123456789.toLong
+  var rndY = 362436069.toLong 
+  var rndZ = 521288629.toLong
+  var rndW = 88675123.toLong
+  val rndMax = 0x7FFFFFFF
+
+  def randf(): Float = {
+    val t = rndX ^ (rndX << 11)
+    rndX = rndY
+    rndY = rndZ
+    rndZ = rndW
+    rndW = (rndW ^ (rndW >> 19) ^(t ^ (t >> 8)))
+    (rndW & rndMax).toFloat / rndMax.toFloat
+  }
 
   val spheres = Array(
     Sphere(Vector3(0, -10002, 0), 9999, Vector3(1, 1, 1)),
@@ -94,9 +106,9 @@ object scalarb {
   def rndDome(normal: Vector3): Vector3 = {
     var p = Vector3.Zero
     do {
-      val px = 2 * Random.nextFloat() - 1
-      val py = 2 * Random.nextFloat() - 1
-      val pz = 2 * Random.nextFloat() - 1
+      val px = 2 * randf() - 1
+      val py = 2 * randf() - 1
+      val pz = 2 * randf() - 1
       p = Vector3(px, py, pz).unit
     } while (p.dot(normal) < 0)
     p
@@ -129,34 +141,31 @@ object scalarb {
   }
 
   def writePPM(data: Array[Array[Vector3]]): Unit = {
-    val ppm = new PrintWriter("scalarb.ppm", "UTF-8")
-    ppm.write(s"P3\n$WIDTH $HEIGHT\n255\n")
+    print(s"P3\n$WIDTH $HEIGHT\n255\n")
 
     for (row <- data) {
       for (color <- row) {
         val r = math.floor(color.x * 255.99).toInt
         val g = math.floor(color.y * 255.99).toInt
         val b = math.floor(color.z * 255.99).toInt
-        ppm.write(s"$r $g $b ")
+        print(s"$r $g $b ")
       }
-      ppm.write("\n")
+      print("\n")
     }
-
-    ppm.close()
   }
 
   def main(args: Array[String]): Unit = {
     val data = Array.tabulate[Vector3](HEIGHT, WIDTH)((_, _) => Vector3.Zero)
     val cam = new Camera()
-    val vdu = (cam.rt - cam.lt) / WIDTH
-    val vdv = (cam.lb - cam.lt) / HEIGHT
+    val vdu = (cam.rt - cam.lt) / WIDTH.toFloat
+    val vdv = (cam.lb - cam.lt) / HEIGHT.toFloat
 
     for (y <- 0 until HEIGHT; x <- 0 until WIDTH) {
       data(y)(x) = (0 until SAMPLES).map { _ =>
-        val direction = cam.lt + (vdu * (x + Random.nextFloat()) + vdv * (y + Random.nextFloat()))
+        val direction = cam.lt + (vdu * (x + randf()) + vdv * (y + randf()))
         val ray = Ray(cam.eye, (direction - cam.eye).unit)
         trace(ray, 0)
-      }.fold(Vector3.Zero)(_ + _) / SAMPLES
+      }.fold(Vector3.Zero)(_ + _) / SAMPLES.toFloat
     }
 
     writePPM(data)

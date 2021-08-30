@@ -12,5 +12,7 @@ mkShell {
 	luajit
 	haxe
 	swift
+	openjdk
+	scala
     ];
 }

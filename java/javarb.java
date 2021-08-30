@@ -1,6 +1,20 @@
-import java.io.PrintWriter;
-import java.util.*;
-import java.lang.Math;
+
+class Rand {
+  static long x = 123456789;
+  static long y = 362436069;
+  static long z = 521288629;
+  static long w = 88675123;
+  static long max = 0x7FFFFFFF;
+  
+  public static float next() {
+    long t = Rand.x ^ (Rand.x << 11);
+    Rand.x = Rand.y;
+    Rand.y = Rand.z;
+    Rand.z = Rand.w;
+    Rand.w = (Rand.w ^ (Rand.w >> 19) ^ (t ^ (t >> 8)));
+    return (float)(Rand.w & Rand.max) / (float)Rand.max;
+  }
+}
 
 class Vector3 {
 
@@ -196,16 +210,15 @@ public class javarb{
   public static final int SAMPLES = 50;
   public static final int MAX_DEPTH = 5;
   public static Sphere[] spheres = new Sphere[8];
-  public static Random rnd = new Random();
 
   public static Vector3 rnd_dome (Vector3 normal) {
     Vector3 p = new Vector3();
     float d;
 
     do {
-      p.x = (float)(2.0 * rnd.nextFloat() - 1.0);
-      p.y = (float)(2.0 * rnd.nextFloat() - 1.0);
-      p.z = (float)(2.0 * rnd.nextFloat() - 1.0);
+      p.x = (float)(2.0 * Rand.next() - 1.0);
+      p.y = (float)(2.0 * Rand.next() - 1.0);
+      p.z = (float)(2.0 * Rand.next() - 1.0);
 
       p = p.Unit();
       d = p.Dot(normal);
@@ -254,26 +267,20 @@ public class javarb{
   }
 
   public static void WritePPM (Vector3[][] data) {
-    try (PrintWriter ppm = new PrintWriter("javarb.ppm", "UTF-8")) {
-      ppm.write(String.format("P3\n%d %d\n255\n", javarb.WIDTH, javarb.HEIGHT));
+      System.out.print(String.format("P3\n%d %d\n255\n", javarb.WIDTH, javarb.HEIGHT));
 
       for(int y = 0; y < HEIGHT; ++y) {
         for(int x = 0; x < WIDTH; ++x) {
           int r = (int) Math.floor(data[y][x].x * 255.99);
           int g = (int) Math.floor(data[y][x].y * 255.99);
           int b = (int) Math.floor(data[y][x].z * 255.99);
-          ppm.write(String.format("%d %d %d ", r, g, b));
+          System.out.print(String.format("%d %d %d ", r, g, b));
         }
-        ppm.write("\n");
+        System.out.print("\n");
       }
-
-      ppm.close();
-    } catch (Exception ex) {
-    }
   }
 
   public static void main (String[] args) {
-
     spheres[0] = (new Sphere(
           new Vector3(0, -10002, 0),
           9999,
@@ -337,8 +344,8 @@ public class javarb{
 
         for(int i = 0; i < javarb.SAMPLES; ++i) {
           ray.direction = cam.lt.Add(
-              vdu.Mul((float)(x + rnd.nextFloat())).Add(
-                vdv.Mul((float)(y + rnd.nextFloat()))));
+              vdu.Mul((float)(x + Rand.next())).Add(
+                vdv.Mul((float)(y + Rand.next()))));
 
           ray.direction = ray.direction.Sub(ray.origin);
           ray.direction = ray.direction.Unit();
