@@ -5,6 +5,7 @@
 *.obj
 *.elf
 *.class
+*.fasl
 
 # Precompiled Headers
 *.gch
