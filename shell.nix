@@ -16,5 +16,6 @@ mkShell {
 	swift
 	openjdk
 	scala
+	sbcl
     ];
 }

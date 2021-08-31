@@ -299,12 +299,11 @@
 
 
 (defun writeppm (data)
-  (with-open-file (ppm "lisprb.ppm" :direction :output :if-exists :supersede)
-    (format ppm "P3~%~A ~A~%255~%" +width+ +height+)
-    (loop for row in data
-          do (loop for color in row
-                   do (format ppm "~{~A ~}" (to-255 color)))
-             (format ppm "~%"))))
+  (format *standard-output* "P3~%~A ~A~%255~%" +width+ +height+)
+  (loop for row in data
+        do (loop for color in row
+                 do (format *standard-output* "~{~A ~}" (to-255 color)))
+           (format *standard-output* "~%")))
 
 (defun produce-data ()
   (let* ((world (world-new))
@@ -339,8 +338,8 @@
     data))
 
 (defun main ()
-  (let ((data (time (produce-data))))
-    (time (writeppm data))))
+  (let ((data (produce-data)))
+    (writeppm data)))
 
 
 (defun dump ()

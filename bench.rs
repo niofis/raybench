@@ -133,6 +133,15 @@ fn wren_lang() -> (String, f64, String) {
     simply_run("Wren", "sh ./wren/run.sh", "./tmp/wrenrb.ppm")
 }
 
+fn lisp_lang() -> (String, f64, String) {
+    compile_run(
+        "Lisp",
+        "sh ./lisp/compile.sh",
+        "sh ./lisp/run.sh",
+        "./tmp/lisprb.ppm",
+    )
+}
+
 fn lua_lang() -> (String, f64, String) {
     simply_run("Lua", "sh ./lua/run.sh", "./tmp/luarb.ppm")
 }
@@ -163,7 +172,7 @@ fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
-        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c, rust, js, go, cs, nim, wren, lua, luajit, swift, haxe, java, scala")
+        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c,rust,js,go,cs,nim,wren,lua,luajit,swift,haxe,java,scala,lisp")
         .subcommand(
             SubCommand::with_name("run")
                 .about("runs and compares the implementations specified")
@@ -201,6 +210,8 @@ fn main() {
                         return Some(nim_lang());
                     } else if lang == "wren" {
                         return Some(wren_lang());
+                    } else if lang == "lisp"{
+                        return Some(lisp_lang());
                     } else if lang == "lua" {
                         return Some(lua_lang());
                     } else if lang == "luajit" {
