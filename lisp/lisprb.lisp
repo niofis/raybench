@@ -2,7 +2,7 @@
   (:use :cl))
 (in-package :lisprb)
 
-(declaim (optimize (speed 3) (safety 0) (debug 0) (space 1)))
+(declaim (optimize (speed 3) (safety 0) (debug 0)))
 
 (defconstant +width+ 1280)
 (defconstant +height+ 720)
@@ -70,7 +70,7 @@
 
 (eval-when (:compile-toplevel)
   (sb-c:defknown (%sqrt)
-      ((single-float 0.0s0)) (single-float 0.0s0)
+      ((single-float 0s0)) (single-float 0s0)
       (sb-c:movable sb-c:foldable sb-c:flushable sb-c:always-translatable))
   (sb-c:defknown (%fma231ss)
       (single-float single-float single-float) single-float
@@ -84,8 +84,6 @@
     (:arg-types single-float)
     (:result-types single-float)
     (:note "inline float arithmetic")
-    (:vop-var vop)
-    (:save-p :compute-only)
     (:generator 1
                 (SB-C::inst SB-X86-64-ASM::sqrtss y x)))
   
@@ -99,18 +97,15 @@
     (:arg-types single-float single-float single-float)
     (:result-types single-float)
     (:note "inline fused multiply add")
-    (:save-p :compute-only)
     (:generator 1
-                (when (not (SB-C:location= a d))
-                  (SB-X86-64-ASM::move d a))
                 (SB-C::inst SB-X86-64-ASM::vfmadd231ss d b c))))
 
 (declaim (ftype (function ((single-float 0s0)) (single-float 0s0)) fsqrt)
          (ftype (function (single-float single-float single-float) single-float) fma231ss)
-         (ftype (function (vec-type vec-type) (single-float 0s0)) v-dot)
+         (ftype (function (vec-type vec-type) single-float) v-dot)
          (ftype (function (vec-type) (single-float 0s0)) v-norm)
          (ftype (function (vec-type) vec-type) v-unit)
-         (ftype (function (vec-type) vec-type) v-unit)
+         (ftype (function (vec-type) vec-type) v-unit!)
          (inline fsqrt fma231ss v-dot v-norm v-unit v-unit!))
 (defun fsqrt (x) (%sqrt x))
 (defun fma231ss (a b c) (%fma231ss a b c))
@@ -118,22 +113,18 @@
 (defun v-dot (v1 v2)
   (let* ((a (fma231ss 0s0 (v-x v1) (v-x v2)))
          (b (fma231ss a   (v-y v1) (v-y v2))))
-    (declare (type single-float a b))
     (fma231ss b (v-z v1) (v-z v2))))
 
 (defun v-norm (v1)
-  (let ((d (v-dot v1 v1)))
-    (declare (type (single-float 0s0) d))
-    (fsqrt d)))
+  (fsqrt (v-dot v1 v1)))
 
 (defun v-unit (v1)
-  (v-div-s v1 (v-norm v1)))
+  (let ((d (v-dot v1 v1)))
+    (declare (type (single-float 0.0)))
+    (fsqrt d)))
 
 (defun v-unit! (v1)
   (v-div-s! v1 (v-norm v1)))
-
-;(disassemble #'fsqrt)
-;(disassemble #'v-norm)
 
 (declaim (inline ray-new))
 (defstruct (ray
@@ -150,8 +141,7 @@
   (v-add! (v-mul-s! v dist)
           (ray-origin ray)))
 
-(declaim (inline sphere-new))
-(declaim (inline sphere-radius))
+(declaim (inline sphere-new sphere-radius))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defstruct (sphere
               (:constructor sphere-new (center radius color is-light)))
@@ -172,11 +162,10 @@
 (declaim (inline camera-new))
 (defstruct (camera
             (:constructor camera-new (eye lt rt lb)))
-  (eye #.(v 0 0 0) :type vec-type)
-  (lt #.(v -1.0 1.0 1.0) :type vec-type)
-  (rt #.(v 1.0 1.0 1.0) :type vec-type)
-  (lb #.(v -1.0 0.0 1.0) :type vec-type))
-
+  (eye #.(v 0.0 0.0 0.0)  :type vec-type)
+  (lt  #.(v -1.0 1.0 1.0) :type vec-type)
+  (rt  #.(v 1.0 1.0 1.0)  :type vec-type)
+  (lb  #.(v -1.0 0.0 1.0) :type vec-type))
 
 (defconstant +no-hit+ (if (boundp '+no-hit+)
                           +no-hit+
@@ -218,7 +207,6 @@
                     nil))))
         nil)))
 
-
 (defun world-new ()
   (list (camera-new #.(v 0.0 4.5 75.0)
                     #.(v -8.0 9.0 50.0)
@@ -233,11 +221,11 @@
               (sphere-new #.(v 0.0 5.0 -1.0) 4.0 #.(v 1.0 0.0 0.0) nil)
               (sphere-new #.(v 8.0 5.0 -1.0) 2.0 #.(v 0.0 0.0 1.0) nil))))
 
-(defun world-camera (world)
-  (first world))
+(defmacro world-camera (world)
+  `(first ,world))
 
-(defun world-spheres (world)
-  (second world))
+(defmacro world-spheres (world)
+  `(second ,world))
 
 ;;https://codingforspeed.com/using-faster-psudo-random-generator-xorshift/
 (declaim (ftype (function () (values (unsigned-byte 32) &optional)) xor128))
@@ -255,12 +243,12 @@
                       (logxor temp
                               (ldb (byte 24 8) temp))))
       w)))
-(declaim (inline randf))
+
+(declaim (inline randf rnd-dome))
 (defun randf ()
   (/ (float (xor128) 1.0) #.(float #xffffffff 1.0)))
 
-(declaim (inline rnd-dome))
-(defun rnd-dome (normal &optional (v (v 0 0 0)))
+(defun rnd-dome (normal &optional (v (v 0.0 0.0 0.0)))
   (declare (type vec-type normal))
   (loop for p = (v-unit! (v (- (* 2.0 (randf)) 1.0)
                             (- (* 2.0 (randf)) 1.0)
@@ -269,7 +257,6 @@
         unless (<= (v-dot p normal) 0.0)
           return p))
 
-
 (defun trace-ray (world ray depth)
   (declare (type ray ray) (type fixnum depth))
   (let* ((v1 (%v 0.0 0.0 0.0))
@@ -277,9 +264,9 @@
          (v3 (%v 0.0 0.0 0.0))
          (v4 (%v 0.0 0.0 0.0))
          (tmp (hit-new 1e16 v1 v2
-                       (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil)))
+                       (sphere-new #.(v 0.0 0.0 0.0) 0.0 #.(v 0.0 0.0 0.0) nil)))
          (hit (hit-new 1e16 v3 v4
-                       (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil)))
+                       (sphere-new #.(v 0.0 0.0 0.0) 0.0 #.(v 0.0 0.0 0.0) nil)))
          (nohit t))
     (declare (dynamic-extent tmp hit v1 v2 v3 v4))
     (loop for sp in (world-spheres world)
@@ -302,19 +289,17 @@
       ;; base case : ensure new vector is returned
       ((sphere-is-light (hit-sphere hit))
        (copy-vec (sphere-color (hit-sphere hit))))
-      (t
-       (let* ((r (v 0 0 0))
-              (nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit) r)))
-              (ncolor (trace-ray world nray (1+ depth)))
-              (at (v-dot (ray-direction nray) (hit-normal hit))))
-         (declare (dynamic-extent r nray))
-         (v-mul! (v-mul-s! ncolor at)
-                 (sphere-color (hit-sphere hit))))))))
+      (t (let* ((r (v 0 0 0))
+                (nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit) r)))
+                (ncolor (trace-ray world nray (1+ depth)))
+                (at (v-dot (ray-direction nray) (hit-normal hit))))
+           (declare (dynamic-extent r nray))
+           (v-mul! (v-mul-s! ncolor at)
+                   (sphere-color (hit-sphere hit))))))))
 
 (declaim (inline to-255))
 (defun to-255 (color)
   (map 'list #'floor (v-mul-s color 255.99)))
-
 
 (defun writeppm (data)
   (format *standard-output* "P3~%~A ~A~%255~%" +width+ +height+)
@@ -331,36 +316,29 @@
                         (coerce +width+ +float-type+)))
          (vdv (v-div-s! (v-sub (camera-lb camera) (camera-lt camera))
                         (coerce +height+ +float-type+)))
-         (data (loop
-                 for y fixnum from 0 below +height+
-                 collect
-                 (loop
-                   for x fixnum from 0 below +width+
-                   collect
-                   (let ((color (v 0 0 0))
-                         (ray (ray-new (camera-eye camera) #.(v 0 0 0)))
-                         (dir nil))
-                     (loop
-                       repeat +samples+
-                       do (setf dir (v-add!
-                                     (v-add! (v-mul-s vdu (+ (coerce x +float-type+)
-                                                             (randf)))
-                                             lt)
-                                     (v-mul-s vdv (+ (coerce y +float-type+)
-                                                     (randf)))))
-                          (setf (ray-direction ray)
-                                (v-unit! (v-sub! dir (ray-origin ray))))
-                          (setf color (v-add! color
-                                              (trace-ray world ray 0))))
-                     (v-div-s! color (coerce +samples+ +float-type+)))))))
+         (data (loop for y from 0 below +height+
+                     collect (loop for x fixnum from 0 below +width+
+                                   collect (let ((color (v 0.0 0.0 0.0))
+                                                 (ray (ray-new (camera-eye camera) #.(v 0.0 0.0 0.0)))
+                                                 (dir nil))
+                                             (loop repeat +samples+ do
+                                               (setf dir (v-add!
+                                                          (v-add! (v-mul-s vdu (+ (coerce x +float-type+)
+                                                                                  (randf)))
+                                                                  lt)
+                                                          (v-mul-s vdv (+ (coerce y +float-type+)
+                                                                          (randf)))))
+                                               (setf (ray-direction ray)
+                                                     (v-unit! (v-sub! dir (ray-origin ray))))
+                                               (setf color (v-add! color
+                                                                   (trace-ray world ray 0))))
+                                             (v-div-s! color (coerce +samples+ +float-type+)))))))
     data))
 
 (defun main ()
   (let ((data (produce-data)))
     (writeppm data)))
 
-
 (defun dump ()
   (progn (sb-ext:disable-debugger)
-         (sb-ext:save-lisp-and-die "lisprb" :toplevel #'main :executable t)))
-
+         (sb-ext:save-lisp-and-die "lisprb" :purify t :toplevel #'main :executable t)))
