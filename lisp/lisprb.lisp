@@ -75,7 +75,6 @@
   (sb-c:defknown (%fma231ss)
       (single-float single-float single-float) single-float
       (sb-c:movable sb-c:foldable sb-c:flushable sb-c:always-translatable))
-
   (sb-c:define-vop (fsqrt/s)
     (:translate %sqrt)
     (:policy :fast-safe)
@@ -86,7 +85,6 @@
     (:note "inline float arithmetic")
     (:generator 1
                 (SB-C::inst SB-X86-64-ASM::sqrtss y x)))
-  
   (sb-c:define-vop (fma231ss)
     (:translate %fma231ss)
     (:policy :fast-safe)
@@ -129,7 +127,7 @@
 (declaim (inline ray-new))
 (defstruct (ray
             (:constructor ray-new (origin direction)))
-  (origin #.(v 0 0 0) :type vec-type)
+  (origin    #.(v 0 0 0) :type vec-type)
   (direction #.(v 0 0 0) :type vec-type))
 
 (declaim (inline ray-point))
@@ -147,7 +145,7 @@
               (:constructor sphere-new (center radius color is-light)))
     (center #.(v 0 0 0) :type vec-type)
     (radius 0.0 :type float-type)
-    (color #.(v 0 0 0) :type vec-type)
+    (color  #.(v 0 0 0) :type vec-type)
     (is-light nil :type (or t nil))))
 
 (declaim (inline hit-new hit-distance))
@@ -155,8 +153,8 @@
   (defstruct (hit
               (:constructor hit-new (distance point normal sphere)))
     (distance 0.0 :type float-type)
-    (point #.(v 0 0 0) :type vec-type)
-    (normal #.(v 0 0 0) :type vec-type)
+    (point    #.(v 0 0 0) :type vec-type)
+    (normal   #.(v 0 0 0) :type vec-type)
     (sphere (make-sphere) :type sphere)))
 
 (declaim (inline camera-new))
@@ -221,11 +219,12 @@
               (sphere-new #.(v 0.0 5.0 -1.0) 4.0 #.(v 1.0 0.0 0.0) nil)
               (sphere-new #.(v 8.0 5.0 -1.0) 2.0 #.(v 0.0 0.0 1.0) nil))))
 
-(defmacro world-camera (world)
-  `(first ,world))
+(declaim (inline world-camera world-spheres))
+(defun world-camera (world)
+  (first world))
 
-(defmacro world-spheres (world)
-  `(second ,world))
+(defun world-spheres (world)
+  (second world))
 
 ;;https://codingforspeed.com/using-faster-psudo-random-generator-xorshift/
 (declaim (ftype (function () (values (unsigned-byte 32) &optional)) xor128))
