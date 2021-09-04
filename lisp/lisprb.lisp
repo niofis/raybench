@@ -2,14 +2,16 @@
   (:use :cl))
 (in-package :lisprb)
 
-(declaim (optimize (speed 3) (safety 0)))
+(declaim (optimize (speed 3) (safety 0) (debug 0) (space 1)))
 
 (defconstant +width+ 1280)
 (defconstant +height+ 720)
 (defconstant +samples+ 50)
 (defconstant +max-depth+ 5)
 (defconstant +float-type+ 'single-float)
+
 (setf *read-default-float-format* +float-type+)
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (deftype float-type (&optional low high) `(,+float-type+ ,low ,high))
   (deftype vec-type () '(simple-array float-type (3)))
@@ -44,17 +46,15 @@
 (defmacro define-v-op (name (a b) op &optional scalar)
   (let ((destructive-name (intern (format nil "~A!" name))))
     `(progn
-       (declaim (inline ,name ,destructive-name))
+       (declaim (ftype (function (vec-type ,(if scalar 'float-type 'vec-type))
+                                 vec-type) ,name ,destructive-name)
+                (inline ,name ,destructive-name))
        (defun ,name (,a ,b)
-         (declare (type vec-type ,a)
-                  (type ,(if scalar 'float-type 'vec-type) ,b))
          (v ,@(loop for acc in '(v-x v-y v-z)
                     collect `(,op (,acc ,a)
                                   ,(if scalar b `(,acc ,b ))))))
        (defun ,destructive-name (,a ,b)
          "destructively modify the first argument, then return it."
-         (declare (type vec-type ,a)
-                  (type ,(if scalar 'float-type 'vec-type) ,b))
          ,@(loop for acc in '(v-x v-y v-z)
                  collect `(setf (,acc ,a)
                                 (,op (,acc ,a)
@@ -68,52 +68,72 @@
 (define-v-op v-div (v1 v2) /)
 (define-v-op v-div-s (v1 s) / t)
 
-(declaim (inline v-dot v-norm v-unit v-unit!))
-(defun v-dot (v1 v2)
-  (declare (type vec-type v1 v2))
-  (+ (* (v-x v1) (v-x v2))
-     (* (v-y v1) (v-y v2))
-     (* (v-z v1) (v-z v2))))
-
 (eval-when (:compile-toplevel)
   (sb-c:defknown (%sqrt)
       ((single-float 0.0s0)) (single-float 0.0s0)
-      (sb-c:movable sb-c:foldable sb-c:flushable))
+      (sb-c:movable sb-c:foldable sb-c:flushable sb-c:always-translatable))
+  (sb-c:defknown (%fma231ss)
+      (single-float single-float single-float) single-float
+      (sb-c:movable sb-c:foldable sb-c:flushable sb-c:always-translatable))
 
   (sb-c:define-vop (fsqrt/s)
-    (:args (x :scs (sb-vm::single-reg)))
-    (:results (y :scs (sb-vm::single-reg)))
     (:translate %sqrt)
     (:policy :fast-safe)
+    (:args (x :scs (sb-vm::single-reg)))
+    (:results (y :scs (sb-vm::single-reg)))
     (:arg-types single-float)
     (:result-types single-float)
     (:note "inline float arithmetic")
     (:vop-var vop)
     (:save-p :compute-only)
     (:generator 1
-                (unless (SB-C:location= x y)
-                  (SB-C::inst SB-X86-64-ASM::xorpd y y))
-                (SB-VM::note-float-location 'sqrt vop x)
-                (SB-C::inst SB-X86-64-ASM::sqrtss y x))))
+                (SB-C::inst SB-X86-64-ASM::sqrtss y x)))
+  
+  (sb-c:define-vop (fma231ss)
+    (:translate %fma231ss)
+    (:policy :fast-safe)
+    (:args (a :scs (sb-vm::single-reg) :target d)
+           (b :scs (sb-vm::single-reg))
+           (c :scs (sb-vm::single-reg)))
+    (:results (d :scs (sb-vm::single-reg) :from (:argument 0)))
+    (:arg-types single-float single-float single-float)
+    (:result-types single-float)
+    (:note "inline fused multiply add")
+    (:save-p :compute-only)
+    (:generator 1
+                (when (not (SB-C:location= a d))
+                  (SB-X86-64-ASM::move d a))
+                (SB-C::inst SB-X86-64-ASM::vfmadd231ss d b c))))
 
-(defun %sqrt (x) (%sqrt x))
+(declaim (ftype (function ((single-float 0s0)) (single-float 0s0)) fsqrt)
+         (ftype (function (single-float single-float single-float) single-float) fma231ss)
+         (ftype (function (vec-type vec-type) (single-float 0s0)) v-dot)
+         (ftype (function (vec-type) (single-float 0s0)) v-norm)
+         (ftype (function (vec-type) vec-type) v-unit)
+         (ftype (function (vec-type) vec-type) v-unit)
+         (inline fsqrt fma231ss v-dot v-norm v-unit v-unit!))
+(defun fsqrt (x) (%sqrt x))
+(defun fma231ss (a b c) (%fma231ss a b c))
+
+(defun v-dot (v1 v2)
+  (let* ((a (fma231ss 0s0 (v-x v1) (v-x v2)))
+         (b (fma231ss a   (v-y v1) (v-y v2))))
+    (declare (type single-float a b))
+    (fma231ss b (v-z v1) (v-z v2))))
 
 (defun v-norm (v1)
-  (declare (type vec-type v1))
   (let ((d (v-dot v1 v1)))
-    (declare (type (single-float 0.0)))
-    (%sqrt d)))
-
-(disassemble #'%sqrt)
-(disassemble #'v-norm)
+    (declare (type (single-float 0s0) d))
+    (fsqrt d)))
 
 (defun v-unit (v1)
-  (declare (type vec-type v1))
   (v-div-s v1 (v-norm v1)))
 
 (defun v-unit! (v1)
-  (declare (type vec-type v1))
   (v-div-s! v1 (v-norm v1)))
+
+;(disassemble #'fsqrt)
+;(disassemble #'v-norm)
 
 (declaim (inline ray-new))
 (defstruct (ray
@@ -140,9 +160,7 @@
     (color #.(v 0 0 0) :type vec-type)
     (is-light nil :type (or t nil))))
 
-
-(declaim (inline hit-new))
-(declaim (inline hit-distance))
+(declaim (inline hit-new hit-distance))
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defstruct (hit
               (:constructor hit-new (distance point normal sphere)))
@@ -178,7 +196,7 @@
          (dis (- (* b b) (* a c))))
     (declare (dynamic-extent oc))
     (if (> dis 0.0)
-        (let* ((e (sqrt dis))
+        (let* ((e (fsqrt dis))
                (t1 (/ (- (- b) e) a)))
           (if (> t1 0.007)
               (let ((point (ray-point ray t1 (hit-point output)))
@@ -343,5 +361,6 @@
 
 
 (defun dump ()
-  (sb-ext:save-lisp-and-die "lisprb" :toplevel #'main :executable t))
+  (progn (sb-ext:disable-debugger)
+         (sb-ext:save-lisp-and-die "lisprb" :toplevel #'main :executable t)))
 
