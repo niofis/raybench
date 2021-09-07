@@ -258,12 +258,12 @@
          (v2 (%v 0.0 0.0 0.0))
          (v3 (%v 0.0 0.0 0.0))
          (v4 (%v 0.0 0.0 0.0))
-         (tmp (hit-new 1e16 v1 v2
-                       (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil)))
-         (hit (hit-new 1e16 v3 v4
-                       (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil)))
+         (s1 (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil))
+         (s2 (sphere-new #.(v 0 0 0) 0.0 #.(v 0 0 0) nil))
+         (tmp (hit-new 1e16 v1 v2 s1))
+         (hit (hit-new 1e16 v3 v4 s2))
          (nohit t))
-    (declare (dynamic-extent tmp hit v1 v2 v3 v4))
+    (declare (dynamic-extent tmp hit v1 v2 v3 v4 s1 s2))
     (loop for sp in (world-spheres world)
           for res = (sphere-hit sp ray tmp)
           when (and res
