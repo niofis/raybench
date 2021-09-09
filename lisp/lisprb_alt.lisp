@@ -2,12 +2,12 @@
   (:use :cl))
 (in-package :lisprb)
 
-(declaim (optimize (speed 3) (safety 0) (debug 0)))
+(declaim (optimize (speed 3) (safety 0) (space 0) (debug 0) (compilation-speed 0)))
 
 (defconstant +width+ 1280)
 (defconstant +height+ 720)
 (defconstant +samples+ 50)
-(defconstant +max-depth+ 5)
+(defconstant +max-depth+ 6)
 (defconstant +float-type+ 'single-float)
 
 (setf *read-default-float-format* +float-type+)
@@ -19,7 +19,7 @@
   (declaim (inline zero))
   (defun zero ()
     (ecase +float-type+
-      (single-float 0.0s0)
+      (single-float 0.0)
       (double-float 0.0d0)))
 
   (declaim (inline %v v-x v-y v-z))
@@ -70,7 +70,7 @@
 
 (eval-when (:compile-toplevel)
   (sb-c:defknown (%sqrt)
-      ((single-float 0s0)) (single-float 0s0)
+      ((single-float 0.0)) (single-float 0.0)
       (sb-c:movable sb-c:foldable sb-c:flushable sb-c:always-translatable))
   (sb-c:defknown (%fma231ss)
       (single-float single-float single-float) single-float
@@ -98,10 +98,10 @@
     (:generator 1
                 (SB-C::inst SB-X86-64-ASM::vfmadd231ss d b c))))
 
-(declaim (ftype (function ((single-float 0s0)) (single-float 0s0)) fsqrt)
+(declaim (ftype (function ((single-float 0.0)) (single-float 0.0)) fsqrt)
          (ftype (function (single-float single-float single-float) single-float) fma231ss)
          (ftype (function (vec-type vec-type) single-float) v-dot)
-         (ftype (function (vec-type) (single-float 0s0)) v-norm)
+         (ftype (function (vec-type) (single-float 0.0)) v-norm)
          (ftype (function (vec-type) vec-type) v-unit)
          (ftype (function (vec-type) vec-type) v-unit!)
          (inline fsqrt fma231ss v-dot v-norm v-unit v-unit!))
@@ -109,7 +109,7 @@
 (defun fma231ss (a b c) (%fma231ss a b c))
 
 (defun v-dot (v1 v2)
-  (let* ((a (fma231ss 0s0 (v-x v1) (v-x v2)))
+  (let* ((a (fma231ss 0.0 (v-x v1) (v-x v2)))
          (b (fma231ss a   (v-y v1) (v-y v2))))
     (fma231ss b (v-z v1) (v-z v2))))
 
@@ -219,10 +219,9 @@
               (sphere-new #.(v 0.0 5.0 -1.0) 4.0 #.(v 1.0 0.0 0.0) nil)
               (sphere-new #.(v 8.0 5.0 -1.0) 2.0 #.(v 0.0 0.0 1.0) nil))))
 
-(declaim (inline world-camera world-spheres))
+(declaim (inline world-camera world-spheres xorg128 randf rnd-dome))
 (defun world-camera (world)
   (first world))
-
 (defun world-spheres (world)
   (second world))
 
@@ -243,7 +242,6 @@
                               (ldb (byte 24 8) temp))))
       w)))
 
-(declaim (inline randf rnd-dome))
 (defun randf ()
   (/ (float (xor128) 1.0) #.(float #xffffffff 1.0)))
 
@@ -300,12 +298,20 @@
 (defun to-255 (color)
   (map 'list #'floor (v-mul-s color 255.99)))
 
+;; (defun writeppm (data)
+;;   (format *standard-output* "P3~%~A ~A~%255~%" +width+ +height+)
+;;   (loop for row in data
+;;         do (loop for color in row
+;;                  do (format *standard-output* "~{~A ~}" (to-255 color)))
+;;            (format *standard-output* "~%")))
+
 (defun writeppm (data)
-  (format *standard-output* "P3~%~A ~A~%255~%" +width+ +height+)
-  (loop for row in data
-        do (loop for color in row
-                 do (format *standard-output* "~{~A ~}" (to-255 color)))
-           (format *standard-output* "~%")))
+  (with-open-file (ppm "lisprb-opt0.ppm" :direction :output :if-exists :supersede)
+    (format ppm "P3~%~A ~A~%255~%" +width+ +height+)
+    (loop for row in data
+          do (loop for color in row
+                   do (format ppm "~{~A ~}" (to-255 color)))
+             (format ppm "~%"))))
 
 (defun produce-data ()
   (let* ((world (world-new))
@@ -321,7 +327,7 @@
                                                  (ray (ray-new (camera-eye camera) #.(v 0.0 0.0 0.0)))
                                                  (dir nil))
                                              (loop repeat +samples+ do
-                                               (setf dir (v-add!
+                                              (setf dir (v-add!
                                                           (v-add! (v-mul-s vdu (+ (coerce x +float-type+)
                                                                                   (randf)))
                                                                   lt)
