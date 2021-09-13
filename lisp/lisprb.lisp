@@ -261,45 +261,48 @@
         unless (<= (v-dot p normal) 0.0)
           return p))
 
-(defun trace-ray (world ray depth)
-  (declare (type ray ray) (type fixnum depth))
-  (let* ((v1 (%v 0.0 0.0 0.0))
-         (v2 (%v 0.0 0.0 0.0))
-         (v3 (%v 0.0 0.0 0.0))
-         (v4 (%v 0.0 0.0 0.0))
-         (tmp (hit-new 1e16 v1 v2
-                       (sphere-new #.(v 0.0 0.0 0.0) 0.0 #.(v 0.0 0.0 0.0) nil)))
-         (hit (hit-new 1e16 v3 v4
-                       (sphere-new #.(v 0.0 0.0 0.0) 0.0 #.(v 0.0 0.0 0.0) nil)))
-         (nohit t))
-    (declare (dynamic-extent tmp hit v1 v2 v3 v4))
-    (loop for sp in (world-spheres world)
-          for res = (sphere-hit sp ray tmp)
-          when (and res
-                    (> (hit-distance res) 0.0001)
-                    (< (hit-distance res)
-                       (hit-distance hit)))
-            do (progn
-                 (setf nohit nil
-                       (hit-distance hit) (hit-distance res)
-                       (hit-sphere hit)   (hit-sphere res))
-                 (replace (hit-point hit) (hit-point res))
-                 (replace (hit-normal hit) (hit-normal res))))
-    (cond
-      ;; base case : ensure new vector is returned
-      ((or nohit
-           (>= depth +max-depth+))
-       (v 0 0 0))
-      ;; base case : ensure new vector is returned
-      ((sphere-is-light (hit-sphere hit))
-       (copy-vec (sphere-color (hit-sphere hit))))
-      (t (let* ((r (v 0 0 0))
-                (nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit) r)))
-                (ncolor (trace-ray world nray (1+ depth)))
-                (at (v-dot (ray-direction nray) (hit-normal hit))))
-           (declare (dynamic-extent r nray))
-           (v-mul! (v-mul-s! ncolor at)
-                   (sphere-color (hit-sphere hit))))))))
+(defun trace-ray (world ray)
+  (labels ((%trace-ray (ray depth)
+             (declare (type ray ray) (type fixnum depth))
+             (let* ((v1 (%v 0.0 0.0 0.0))
+                    (v2 (%v 0.0 0.0 0.0))
+                    (v3 (%v 0.0 0.0 0.0))
+                    (v4 (%v 0.0 0.0 0.0))
+                    (tmp (hit-new 1e16 v1 v2
+                                  (sphere-new #.(v 0.0 0.0 0.0) 0.0 #.(v 0.0 0.0 0.0) nil)))
+                    (hit (hit-new 1e16 v3 v4
+                                  (sphere-new #.(v 0.0 0.0 0.0) 0.0 #.(v 0.0 0.0 0.0) nil)))
+                    (nohit t))
+               (declare (dynamic-extent tmp hit v1 v2 v3 v4))
+               (loop for sp in (world-spheres world)
+                     for res = (sphere-hit sp ray tmp)
+                     when (and res
+                               (> (hit-distance res) 0.0001)
+                               (< (hit-distance res)
+                                  (hit-distance hit)))
+                       do (progn
+                            (setf nohit nil
+                                  (hit-distance hit) (hit-distance res)
+                                  (hit-sphere hit)   (hit-sphere res))
+                            (replace (hit-point hit) (hit-point res))
+                            (replace (hit-normal hit) (hit-normal res))))
+               (cond
+                 ;; base case : ensure new vector is returned
+                 ((or nohit
+                      (>= depth +max-depth+))
+                  (v 0 0 0))
+                 ;; base case : ensure new vector is returned
+                 ((sphere-is-light (hit-sphere hit))
+                  (copy-vec (sphere-color (hit-sphere hit))))
+                 (t (let* ((r (v 0 0 0))
+                           (nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit) r)))
+                           (ncolor (%trace-ray nray (1+ depth)))
+                           (at (v-dot (ray-direction nray) (hit-normal hit))))
+                      (declare (dynamic-extent r nray))
+                      (v-mul! (v-mul-s! ncolor at)
+                              (sphere-color (hit-sphere hit)))))))))
+    (declare (dynamic-extent #'%trace-ray))
+    (%trace-ray ray 0)))
 
 (declaim (inline to-255))
 (defun to-255 (color)
@@ -335,7 +338,7 @@
                                                (setf (ray-direction ray)
                                                      (v-unit! (v-sub! dir (ray-origin ray))))
                                                (setf color (v-add! color
-                                                                   (trace-ray world ray 0))))
+                                                                   (trace-ray world ray))))
                                              (v-div-s! color (coerce +samples+ +float-type+)))))))
     data))
 
