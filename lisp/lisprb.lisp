@@ -285,21 +285,24 @@
                        do (progn
                             (setf nohit nil)
                             (rotatef hit tmp)))
-               (cond
-                 ;; base case : ensure new vector is returned
-                 ((or nohit
-                      (>= depth +max-depth+))
-                  (v 0 0 0))
-                 ;; base case : ensure new vector is returned
-                 ((sphere-is-light (hit-sphere hit))
-                  (copy-vec (sphere-color (hit-sphere hit))))
-                 (t (let* ((r (v 0 0 0))
-                           (nray (ray-new (hit-point hit) (rnd-dome (hit-normal hit) r)))
-                           (ncolor (%trace-ray nray (1+ depth)))
-                           (at (v-dot (ray-direction nray) (hit-normal hit))))
-                      (declare (dynamic-extent r nray))
-                      (v-mul! (v-mul-s! ncolor at)
-                              (sphere-color (hit-sphere hit)))))))))
+               ;; base case : ensure new vector is returned
+               (when (or nohit (>= depth +max-depth+))
+                 (return-from %trace-ray
+                   (v 0 0 0)))
+               ;; base case : ensure new vector is returned
+               (let ((s (hit-sphere hit)))
+                 (when (sphere-is-light s)
+                   (return-from %trace-ray
+                     (copy-vec (sphere-color s))))
+                 (let* ((n (hit-normal hit))
+                        (r (v 0 0 0))
+                        (nray (ray-new (hit-point hit) (rnd-dome n r)))
+                        (ncolor (%trace-ray nray (1+ depth)))
+                        (at (v-dot (ray-direction nray) n)))
+                   (declare (dynamic-extent r nray))
+                   (return-from %trace-ray
+                     (v-mul! (v-mul-s! ncolor at)
+                             (sphere-color s))))))))
     (declare (dynamic-extent #'%trace-ray))
     (%trace-ray ray 0)))
 
