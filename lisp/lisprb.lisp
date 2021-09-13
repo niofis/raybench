@@ -283,11 +283,8 @@
                                (< (hit-distance res)
                                   (hit-distance hit)))
                        do (progn
-                            (setf nohit nil
-                                  (hit-distance hit) (hit-distance res)
-                                  (hit-sphere hit)   (hit-sphere res))
-                            (replace (hit-point hit) (hit-point res))
-                            (replace (hit-normal hit) (hit-normal res))))
+                            (setf nohit nil)
+                            (rotatef hit tmp)))
                (cond
                  ;; base case : ensure new vector is returned
                  ((or nohit
