@@ -266,43 +266,40 @@
 (defun trace-ray (world ray)
   (labels ((%trace-ray (ray depth)
              (declare (type ray ray) (type fixnum depth))
-             (let* ((v1 (%v 0.0 0.0 0.0))
-                    (v2 (%v 0.0 0.0 0.0))
-                    (v3 (%v 0.0 0.0 0.0))
-                    (v4 (%v 0.0 0.0 0.0))
-                    (tmp (hit-new 1e16 v1 v2
-                                  (sphere-new #.(v 0.0 0.0 0.0) 0.0 #.(v 0.0 0.0 0.0) nil)))
-                    (hit (hit-new 1e16 v3 v4
-                                  (sphere-new #.(v 0.0 0.0 0.0) 0.0 #.(v 0.0 0.0 0.0) nil)))
-                    (nohit t))
-               (declare (dynamic-extent tmp hit v1 v2 v3 v4))
-               (loop for sp in (world-spheres world)
-                     for res = (sphere-hit sp ray tmp)
-                     when (and res
-                               (> (hit-distance res) 0.0001)
-                               (< (hit-distance res)
-                                  (hit-distance hit)))
-                       do (progn
-                            (setf nohit nil)
-                            (rotatef hit tmp)))
-               ;; base case : ensure new vector is returned
-               (when (or nohit (>= depth +max-depth+))
-                 (return-from %trace-ray
-                   (v 0 0 0)))
-               ;; base case : ensure new vector is returned
-               (let ((s (hit-sphere hit)))
-                 (when (sphere-is-light s)
-                   (return-from %trace-ray
-                     (copy-vec (sphere-color s))))
-                 (let* ((n (hit-normal hit))
-                        (r (v 0 0 0))
-                        (nray (ray-new (hit-point hit) (rnd-dome n r)))
-                        (ncolor (%trace-ray nray (1+ depth)))
-                        (at (v-dot (ray-direction nray) n)))
-                   (declare (dynamic-extent r nray))
-                   (return-from %trace-ray
-                     (v-mul! (v-mul-s! ncolor at)
-                             (sphere-color s))))))))
+             (if (>= depth +max-depth+)
+                 (v 0 0 0)
+                 (let* ((v1 (%v 0.0 0.0 0.0))
+                        (v2 (%v 0.0 0.0 0.0))
+                        (v3 (%v 0.0 0.0 0.0))
+                        (v4 (%v 0.0 0.0 0.0))
+                        (tmp (hit-new 1e16 v1 v2
+                                      (sphere-new #.(v 0.0 0.0 0.0) 0.0 #.(v 0.0 0.0 0.0) nil)))
+                        (hit (hit-new 1e16 v3 v4
+                                      (sphere-new #.(v 0.0 0.0 0.0) 0.0 #.(v 0.0 0.0 0.0) nil)))
+                        (nohit t))
+                   (declare (dynamic-extent tmp hit v1 v2 v3 v4))
+                   (loop for sp in (world-spheres world)
+                         for res = (sphere-hit sp ray tmp)
+                         when (and res
+                                   (> (hit-distance res) 0.0001)
+                                   (< (hit-distance res)
+                                      (hit-distance hit)))
+                           do (progn
+                                (setf nohit nil)
+                                (rotatef hit tmp)))
+                   (if nohit
+                       (v 0 0 0)
+                       (let ((s (hit-sphere hit)))
+                         (if (sphere-is-light s)
+                             (copy-vec (sphere-color s))
+                             (let* ((n (hit-normal hit))
+                                    (r (v 0 0 0))
+                                    (nray (ray-new (hit-point hit) (rnd-dome n r)))
+                                    (ncolor (%trace-ray nray (1+ depth)))
+                                    (at (v-dot (ray-direction nray) n)))
+                               (declare (dynamic-extent r nray))
+                               (v-mul! (v-mul-s! ncolor at)
+                                       (sphere-color s))))))))))
     (declare (dynamic-extent #'%trace-ray))
     (%trace-ray ray 0)))
 
