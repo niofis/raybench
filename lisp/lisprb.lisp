@@ -120,9 +120,7 @@
 (declaim (ftype (function (vec-type) vec-type) v-unit)
          (inline v-unit))
 (defun v-unit (v1)
-  (let ((d (v-dot v1 v1)))
-    (declare (type (single-float 0.0)))
-    (fsqrt d)))
+  (v-div-s v1 (v-norm v1)))
 
 (declaim (ftype (function (vec-type) vec-type) v-unit!)
          (inline v-unit!))
