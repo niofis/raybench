@@ -105,6 +105,9 @@
          (inline fma231ss))
 (defun fma231ss (a b c) (%fma231ss a b c))
 
+(declaim (inline square))
+(defun square (x) (* x x))
+
 (declaim (ftype (function (vec-type vec-type) single-float) v-dot)
          (inline v-dot))
 (defun v-dot (v1 v2)
@@ -183,7 +186,7 @@
          (a-inv (/ a))
          (b (v-dot oc dir))
          (c (- (v-dot oc oc)
-               (* (sphere-radius sphere) (sphere-radius sphere))))
+               (square (sphere-radius sphere))))
          (dis (- (* b b) (* a c))))
     (declare (dynamic-extent oc))
     (if (> dis 0.0)
