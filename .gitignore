@@ -66,3 +66,4 @@ webasmrt/Cargo.lock
 zig-cache/
 zigrb
 .shell.nix.swp
+webassembly/wasmrt.wasm

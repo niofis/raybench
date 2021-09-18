@@ -17,5 +17,7 @@ mkShell {
 	openjdk
 	scala
 	sbcl
+	wabt
+	wasmer
     ];
 }

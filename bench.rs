@@ -168,11 +168,20 @@ fn zig_lang() -> (String, f64, String) {
     )
 }
 
+fn wat_lang() -> (String, f64, String) {
+    compile_run(
+        "Webassembly",
+        "sh ./webassembly/compile.sh",
+        "sh ./webassembly/run.sh",
+        "./tmp/wasmrt.ppm",
+    )
+}
+
 fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
-        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c,rust,js,go,cs,nim,wren,lua,luajit,swift,haxe,java,scala,lisp")
+        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c,rust,js,go,cs,nim,wren,lua,luajit,swift,haxe,java,scala,lisp,wasm")
         .subcommand(
             SubCommand::with_name("run")
                 .about("runs and compares the implementations specified")
@@ -220,6 +229,8 @@ fn main() {
                         return Some(swift_lang());
                     } else if lang == "scala" {
                         return Some(scala_lang());
+                    } else if lang == "wasm" {
+                        return Some(wat_lang());
                     } else if lang == "zig" {
                         return Some(zig_lang());
                     } else {
