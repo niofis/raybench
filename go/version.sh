@@ -1,0 +1,1 @@
+go version | head -1

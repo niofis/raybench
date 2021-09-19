@@ -16,11 +16,33 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::process::Command;
 
-fn compile_run(name: &str, compile: &str, run: &str, ppm: &str) -> (String, f64, String) {
-    println!("{}\nCompiling...", &name);
-    let args: Vec<&str> = compile.split(" ").collect();
-    Command::new(args[0])
-        .args(&args[1..])
+fn platform_details() -> (String, String) {
+    let output = Command::new("sh")
+    .arg("./os.sh")
+    .output()
+    .expect("failed to run");
+    let os = String::from_utf8_lossy(&output.stdout).to_string().replace("\n", "");
+
+    let output = Command::new("sh")
+    .arg("./cpu.sh")
+    .output()
+    .expect("failed to run");
+    let cpu = String::from_utf8_lossy(&output.stdout).to_string().replace("\n", "");
+
+    (os, cpu)
+}
+
+fn compile_run(name: &str, path: &str, ppm: &str) -> (String, String, f64, String) {
+    let output = Command::new("sh")
+    .arg(format!("{}/version.sh", path))
+    .output()
+    .expect("failed to run");
+    let version = String::from_utf8_lossy(&output.stdout).to_string().replace("\n", "");
+
+    println!("{} ({})\nCompiling...", &name, &version);
+
+    Command::new("sh")
+        .arg(format!("{}/compile.sh", path))
         .spawn()
         .expect("compilation did not succeed")
         .wait()
@@ -28,9 +50,8 @@ fn compile_run(name: &str, compile: &str, run: &str, ppm: &str) -> (String, f64,
 
     println!("Running...");
     let start = time::precise_time_s();
-    let args: Vec<&str> = run.split(" ").collect();
-    let output = Command::new(args[0])
-        .args(&args[1..])
+    let output = Command::new("sh")
+        .arg(format!("{}/run.sh", path))
         .output()
         .expect("failed to run");
     let end = time::precise_time_s();
@@ -41,15 +62,21 @@ fn compile_run(name: &str, compile: &str, run: &str, ppm: &str) -> (String, f64,
     let mut ppm_file = BufWriter::new(File::create(ppm).expect("error creating file"));
     write!(ppm_file, "{}", &ppm_string).expect("write ppm");
 
-    (name.to_string(), elapsed, ppm_string.to_string())
+    (name.to_string(), version, elapsed, ppm_string.to_string())
 }
 
-fn simply_run(name: &str, run: &str, ppm: &str) -> (String, f64, String) {
-    println!("{}\nRunning...", &name);
+fn simply_run(name: &str, path: &str, ppm: &str) -> (String, String, f64, String) {
+    let output = Command::new("sh")
+    .arg(format!("{}/version.sh", path))
+    .output()
+    .expect("failed to run");
+    let version = String::from_utf8_lossy(&output.stdout).to_string().replace("\n", "");
+
+    println!("{} ({})\nRunning...", &name, &version);
+
     let start = time::precise_time_s();
-    let args: Vec<&str> = run.split(" ").collect();
-    let output = Command::new(args[0])
-        .args(&args[1..])
+    let output = Command::new("sh")
+        .arg(format!("{}/run.sh", path))
         .output()
         .expect("failed to run");
     let end = time::precise_time_s();
@@ -60,121 +87,131 @@ fn simply_run(name: &str, run: &str, ppm: &str) -> (String, f64, String) {
     let mut ppm_file = BufWriter::new(File::create(ppm).expect("error creating file"));
     write!(ppm_file, "{}", &ppm_string).expect("write ppm");
 
-    (name.to_string(), elapsed, ppm_string.to_string())
+    (name.to_string(), version, elapsed, ppm_string.to_string())
 }
 
-fn c_lang() -> (String, f64, String) {
-    compile_run("C", "sh ./c/compile.sh", "sh ./c/run.sh", "./tmp/crb.ppm")
+fn c_lang() -> (String, String, f64, String) {
+    compile_run("C", "./c", "./tmp/crb.ppm")
 }
 
-fn rust_lang() -> (String, f64, String) {
+fn rust_lang() -> (String, String, f64, String) {
     compile_run(
         "Rust Alt",
-        "sh ./rust/compile.sh",
-        "sh ./rust/run.sh",
+        "./rust",
         "./tmp/rsrb_alt.ppm",
     )
 }
 
-fn go_lang() -> (String, f64, String) {
+fn go_lang() -> (String, String, f64, String) {
     compile_run(
         "Go",
-        "sh ./go/compile.sh",
-        "sh ./go/run.sh",
+        "./go",
         "./tmp/gorb.ppm",
     )
 }
 
-fn java_lang() -> (String, f64, String) {
+fn java_lang() -> (String, String, f64, String) {
     compile_run(
         "Java",
-        "sh ./java/compile.sh",
-        "sh ./java/run.sh",
+        "./java",
         "./tmp/javarb.ppm",
     )
 }
 
-fn scala_lang() -> (String, f64, String) {
+fn scala_lang() -> (String, String, f64, String) {
     compile_run(
         "Scala",
-        "sh ./scala/compile.sh",
-        "sh ./scala/run.sh",
+        "./scala",
         "./tmp/scalarb.ppm",
     )
 }
 
-fn haxe_lang() -> (String, f64, String) {
-    simply_run("Haxe", "sh ./haxe/run.sh", "./tmp/haxerb.ppm")
+fn haxe_lang() -> (String, String, f64, String) {
+    simply_run("Haxe", "./haxe", "./tmp/haxerb.ppm")
 }
 
-fn js_lang() -> (String, f64, String) {
-    simply_run("Javascript", "sh ./javascript/run.sh", "./tmp/jsrb.ppm")
+fn js_lang() -> (String, String, f64, String) {
+    simply_run("Javascript", "./javascript", "./tmp/jsrb.ppm")
 }
 
-fn cs_lang() -> (String, f64, String) {
+fn cs_lang() -> (String, String, f64, String) {
     compile_run(
         "C#",
-        "sh ./csharp/compile.sh",
-        "sh ./csharp/run.sh",
+        "./csharp",
         "./tmp/csrb.ppm",
     )
 }
 
-fn nim_lang() -> (String, f64, String) {
+fn nim_lang() -> (String, String, f64, String) {
     compile_run(
         "Nim",
-        "sh ./nim/compile.sh",
-        "sh ./nim/run.sh",
+        "./nim",
         "./tmp/nimrb.ppm",
     )
 }
 
-fn wren_lang() -> (String, f64, String) {
-    simply_run("Wren", "sh ./wren/run.sh", "./tmp/wrenrb.ppm")
+fn wren_lang() -> (String, String, f64, String) {
+    simply_run("Wren", "./wren", "./tmp/wrenrb.ppm")
 }
 
-fn lisp_lang() -> (String, f64, String) {
+fn lisp_lang() -> (String, String, f64, String) {
     compile_run(
         "Lisp",
-        "sh ./lisp/compile.sh",
-        "sh ./lisp/run.sh",
+        "./lisp",
         "./tmp/lisprb.ppm",
     )
 }
 
-fn lua_lang() -> (String, f64, String) {
-    simply_run("Lua", "sh ./lua/run.sh", "./tmp/luarb.ppm")
+fn lua_lang() -> (String, String, f64, String) {
+    simply_run("Lua", "./lua", "./tmp/luarb.ppm")
 }
 
-fn luajit_lang() -> (String, f64, String) {
-    simply_run("LuaJIT", "sh ./lua/run_jit.sh", "./tmp/luarbjit.ppm")
+fn luajit_lang() -> (String, String, f64, String) {
+    simply_run("LuaJIT", "./luajit", "./tmp/luarbjit.ppm")
 }
 
-fn swift_lang() -> (String, f64, String) {
+fn swift_lang() -> (String, String, f64, String) {
     compile_run(
         "Swift",
-        "sh ./swift/compile.sh",
-        "sh ./swift/run.sh",
+        "./swift",
         "./tmp/swrb.ppm",
     )
 }
 
-fn zig_lang() -> (String, f64, String) {
+fn zig_lang() -> (String, String, f64, String) {
     compile_run(
         "Zig",
-        "sh ./zig/compile.sh",
-        "sh ./zig/run.sh",
+        "./zig",
         "./tmp/zigrb.ppm",
     )
 }
 
-fn wat_lang() -> (String, f64, String) {
+fn wat_lang() -> (String, String, f64, String) {
     compile_run(
         "Webassembly",
-        "sh ./webassembly/compile.sh",
-        "sh ./webassembly/run.sh",
+        "./webassembly",
         "./tmp/wasmrt.ppm",
     )
+}
+
+fn plain_results(results: Vec<(String, String, f64, String)>) {
+    let (os, cpu) = platform_details();
+            
+    println!("{} ({})", os, cpu);
+    results
+        .iter()
+        .for_each(|(name, version, elapsed, _)| println!("{:7} \t {:.4}s ({})", name, elapsed, version));
+}
+
+fn markdown_results(results: Vec<(String, String, f64, String)>) {
+    let (os, cpu) = platform_details();
+    
+    println!("#### {} ({})", os, cpu);
+    println!("|Language|Running Time|Version|");
+    println!("|--------|----------------|-------|");
+    results
+        .iter()
+        .for_each(|(name, version, elapsed, _)| println!("|{:7}|{:.4} (s)|{}|", name, elapsed, version));
 }
 
 fn main() {
@@ -190,6 +227,14 @@ fn main() {
                         .required(true)
                         .help("one or multiple benchmarks separated by commas")
                         .takes_value(true),
+                )
+                .arg(
+                    Arg::with_name("markdown")
+                        .long("markdown")
+                        .short("m")
+                        .required(false)
+                        .help("prints results in markdown format")
+                        .takes_value(false),
                 ),
         )
         .setting(AppSettings::ArgRequiredElseHelp)
@@ -197,7 +242,7 @@ fn main() {
 
     if let Some(matches) = matches.subcommand_matches("run") {
         if let Some(langs) = matches.value_of("implementations") {
-            let mut results: Vec<(String, f64, String)> = langs
+            let mut results: Vec<(String, String, f64, String)> = langs
                 .split(",")
                 .filter_map(|lang_str| {
                     let lang = lang_str.trim();
@@ -238,10 +283,14 @@ fn main() {
                     }
                 })
                 .collect();
-            results.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
-            results
-                .iter()
-                .for_each(|(name, elapsed, _)| println!("{:7} \t {:.4}s", name, elapsed));
+
+            results.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
+            
+            if matches.is_present("markdown") {
+                markdown_results(results);
+            } else {
+                plain_results(results);
+            }
         }
     }
 }

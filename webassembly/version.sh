@@ -1,0 +1,1 @@
+wasmer --version | head -1

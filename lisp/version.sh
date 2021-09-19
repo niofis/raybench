@@ -1,0 +1,1 @@
+sbcl --version | head -1

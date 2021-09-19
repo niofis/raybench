@@ -1,0 +1,1 @@
+nim --version | head -1
