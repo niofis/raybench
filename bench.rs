@@ -1,7 +1,7 @@
 #!/usr/bin/env run-cargo-script
 //! Install cargo-script first:
 //! cargo install cargo-script
-//! cargo script bench.rs
+//! cargo script bench.rs -- run c -m
 //!
 //! ```cargo
 //! [dependencies]
