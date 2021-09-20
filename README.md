@@ -312,20 +312,20 @@ sys     2m16.687s
 |Lua     	 |7450.4894 |Lua 5.2.4  Copyright (C) 1994-2015 Lua.org, PUC-Rio|
 
 #### Ubuntu 20.04.3 LTS (AMD EPYC 7281 16-Core Processor)
-|Language|Running Time|Version|
+|Language|Running Time (s)|Version|
 |--------|----------------|-------|
-|Wren   |0.0075 (s)||
-|Rust Alt|22.1112 (s)|rustc 1.53.0|
-|Swift  |27.4875 (s)|Swift version 5.4.2 (swift-5.4.2-RELEASE)|
-|Nim    |29.8019 (s)|Nim Compiler Version 1.4.8 [Linux: amd64]|
-|Scala  |40.7265 (s)|Scala compiler version 2.13.6 -- Copyright 2002-2021, LAMP/EPFL and Lightbend, Inc.|
-|C#     |45.8363 (s)|5.0.202|
-|C      |49.5445 (s)|gcc (GCC) 10.3.0|
-|Lisp   |50.5706 (s)|SBCL 2.1.2.nixos|
-|Java   |51.8577 (s)|javac 16|
-|Go     |58.5328 (s)|go version go1.16.7 linux/amd64|
-|Webassembly|63.6267 (s)|wasmer 2.0.0|
-|Javascript|182.6355 (s)|v16.8.0|
-|LuaJIT |3255.1736 (s)|LuaJIT 2.1.0-beta3 -- Copyright (C) 2005-2021 Mike Pall. https://luajit.org/|
-|Haxe   |6044.8931 (s)|4.2.1|
-|Lua    |10408.4416 (s)|Lua 5.2.4  Copyright (C) 1994-2015 Lua.org, PUC-Rio|
+|Wren   |0.0075||
+|Rust Alt|22.1112|rustc 1.53.0|
+|Swift  |27.4875|Swift version 5.4.2 (swift-5.4.2-RELEASE)|
+|Nim    |29.8019|Nim Compiler Version 1.4.8 [Linux: amd64]|
+|Scala  |40.7265|Scala compiler version 2.13.6 -- Copyright 2002-2021, LAMP/EPFL and Lightbend, Inc.|
+|C#     |45.8363|5.0.202|
+|C      |49.5445|gcc (GCC) 10.3.0|
+|Lisp   |50.5706|SBCL 2.1.2.nixos|
+|Java   |51.8577|javac 16|
+|Go     |58.5328|go version go1.16.7 linux/amd64|
+|Webassembly|63.6267|wasmer 2.0.0|
+|Javascript|182.6355|v16.8.0|
+|LuaJIT |3255.1736|LuaJIT 2.1.0-beta3 -- Copyright (C) 2005-2021 Mike Pall. https://luajit.org/|
+|Haxe   |6044.8931|4.2.1|
+|Lua    |10408.4416|Lua 5.2.4  Copyright (C) 1994-2015 Lua.org, PUC-Rio|
