@@ -11,7 +11,7 @@
     (global $samples|f32 f32 (f32.const 50))
     (global $max_depth i32 (i32.const 5))
     (global $chars i32 (i32.const 0))
-    (data (global.get $chars) "0123456789ABCDEFP3 \n.-")
+    (data (offset (i32.const 0)) "0123456789ABCDEFP3 \n.-")
     (global $ciovec|buf i32 (i32.const 24))
     (global $ciovec|size i32 (i32.const 28))
     (global $ciovec|res i32 (i32.const 32))
