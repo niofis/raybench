@@ -194,6 +194,14 @@ fn wat_lang() -> (String, String, f64, String) {
     )
 }
 
+fn odin_lang() -> (String, String, f64, String) {
+    compile_run(
+        "Odin",
+        "./odin",
+        "./tmp/odinrb.ppm",
+    )
+}
+
 fn plain_results(results: Vec<(String, String, f64, String)>) {
     let (os, cpu) = platform_details();
             
@@ -278,6 +286,8 @@ fn main() {
                         return Some(wat_lang());
                     } else if lang == "zig" {
                         return Some(zig_lang());
+                    } else if lang == "odin" {
+                        return Some(odin_lang());
                     } else {
                         return None;
                     }
