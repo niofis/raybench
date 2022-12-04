@@ -26,12 +26,12 @@ rand_next :: proc() -> f32 {
     return f32(rand_state.w) / max
 }
 
-random_dome :: proc(normal: V3) -> V3 {
+random_dome :: proc(normal: ^V3) -> V3 {
     n := proc() -> f32 { return rand_next() * 2.0 - 1.0 }
     for {
-        
-        v : = unit(V3 { n(), n(), n() })
-        if dot(v, normal) >= 0.0 do return v
+        v := V3 { n(), n(), n() }
+        v = unit(&v)
+        if dot(&v, normal) >= 0.0 do return v
     }
 }
 
@@ -64,30 +64,23 @@ Hit :: struct {
     normal: V3,
 }
 
-dot :: proc(a, b: V3) -> f32 {
+dot :: proc(a, b: ^V3) -> f32 {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 }
 
-norm :: proc(a: V3) -> f32 {
+norm :: proc(a: ^V3) -> f32 {
     return math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2])
 }
 
-unit :: proc(a: V3) -> V3 {
-    return a / norm(a)
+unit :: proc(a: ^V3) -> V3 {
+    return a^ / norm(a)
 }
 
-//https://github.com/odin-lang/Odin/blob/master/examples/demo/demo.odin#L1235
-cross :: proc(a, b: V3) -> V3 {
-    i := swizzle(a, 1, 2, 0) * swizzle(b, 2, 0, 1)
-    j := swizzle(a, 2, 0, 1) * swizzle(b, 1, 2, 0)
-    return i - j
-}
-
-hit :: proc(sphere: Sphere, ray: ^Ray) -> Maybe(Hit) {
+hit :: proc(sphere: ^Sphere, ray: ^Ray) -> Maybe(Hit) {
     oc := ray.origin - sphere.center
-    a := dot(ray.direction, ray.direction)
-    b := dot(oc, ray.direction)
-    c := dot(oc, oc) - sphere.radius * sphere.radius;
+    a := dot(&ray.direction, &ray.direction)
+    b := dot(&oc, &ray.direction)
+    c := dot(&oc, &oc) - sphere.radius * sphere.radius;
     dis := b * b - a * c
 
     if dis > 0 {
@@ -96,14 +89,16 @@ hit :: proc(sphere: Sphere, ray: ^Ray) -> Maybe(Hit) {
 
         if t > 0.007 {
             pt := point(ray, t)
-            n := unit(pt - sphere.center)
+            n := pt - sphere.center
+            n = unit(&n)
             return Hit { t, pt, n}
         }
 
         t = (-b + e) / a
         if t > 0.007 {
             pt := point(ray, t)
-            n := unit(pt - sphere.center)
+            n := pt - sphere.center
+            n = unit(&n)
             return Hit { t, pt, n}
         }
     }
@@ -176,31 +171,32 @@ world := World {
 }
 
 trace :: proc(world: ^World, ray: ^Ray, depth: int) -> V3 {
-    if depth >= MAXDEPTH do return V3 { 0, 0, 0}
+    if depth >= MAXDEPTH do return V3 { 0, 0, 0 }
 
     closest_hit : Maybe(Hit) = nil
-    closest_sphere : Maybe(Sphere) = nil
+    closest_sphere_idx := -1
 
-    for sphere in world.spheres {
-        h, ok := hit(sphere, ray).?
+    for idx in 0..<len(world.spheres) {
+        sphere := world.spheres[idx]
+        h, ok := hit(&sphere, ray).?
         c, ok2: = closest_hit.?
         if ok && !ok2 {
             closest_hit = h
-            closest_sphere = sphere
+            closest_sphere_idx = idx
         } else if ok && ok2 && h.dist < c.dist {
             closest_hit = h
-            closest_sphere = sphere
+            closest_sphere_idx = idx
         }
     }
 
     if hit, ok := closest_hit.?; ok {
-        sphere, _ := closest_sphere.?
+        sphere := world.spheres[closest_sphere_idx]
         if sphere.is_light {
             return sphere.color
         } else {
-            nray := Ray { origin = hit.point, direction = random_dome(hit.normal) }
+            nray := Ray { origin = hit.point, direction = random_dome(&hit.normal) }
             ncolor := trace(world, &nray, depth + 1)
-            at := dot(nray.direction, hit.normal)
+            at := dot(&nray.direction, &hit.normal)
             return sphere.color * (ncolor * at)
         }
     }
@@ -237,9 +233,10 @@ main :: proc() {
         for x in 0..<WIDTH {
             color := V3 {0, 0, 0}
             for _ in 0..<SAMPLES {
+                dir := (world.camera.lt + (vdu * (f32(x) + rand_next()) + vdv * (f32(y) + rand_next()))) - world.camera.eye;
                 ray := Ray {
                     origin = world.camera.eye,
-                    direction = unit((world.camera.lt + (vdu * (f32(x) + rand_next()) + vdv * (f32(y) + rand_next()))) - world.camera.eye),
+                    direction = unit(&dir),
                 }
                 color += trace(&world, &ray, 0)
             }
