@@ -2,6 +2,8 @@ USING: kernel math math.functions sequences assocs prettyprint classes.tuple acc
 IN: factorrb
 USING: factorrb ;
 
+enable-optimizer
+
 : v-add ( seq1 seq2 -- seq ) zip [ first2 + ] map ;
 : v-sub ( seq1 seq2 -- seq ) zip [ first2 - ] map ;
 : v-mul ( seq1 seq2 -- seq ) zip [ first2 * ] map ;
@@ -60,8 +62,6 @@ TUPLE: camera
 
 : <camera> ( -- camera ) camera new ;
 
-
-
 TUPLE: world
     { camera camera read-only }
     { spheres sequence read-only } ;
@@ -101,9 +101,10 @@ TUPLE: random
     [ >>state ] dip ;
 
 : next-random-v ( random -- random seq )
-    next-random
-    [ next-random ] dip
-    [ next-random ] 2dip
+    next-random swap
+    next-random swap
+    next-random swap
+    4 -nrot
     3array
     [ 2 * 1 - ] map ;
 
@@ -113,7 +114,7 @@ TUPLE: random
         drop
         [ next-random-v ] dip swap
         unit
-        [ dup dot ] keep swap
+        [ [ dup ] dip dot ] keep swap
         0.0 <
     ] loop swap drop ;
 
@@ -138,8 +139,8 @@ TUPLE: random
         ! true
         sqrt ! e
         [ neg ] dip
-        [ + swap / ] 3keep ! t2 is second place in the stack
-        - swap / ! t1 is top of the stack
+        [ + swap /f ] 3keep ! t2 is second place in the stack
+        - swap /f ! t1 is top of the stack
         dup 0.007 >
         [
             ! true
@@ -243,12 +244,11 @@ TUPLE: random
 : write-ppm ( width height seq -- )
     [ "P3\n%d %d\n255\n" printf ] dip
     [
-        [ 255.99 * 255 min 0 max "%d " printf ] each
+        [ 255.99 * 255 min "%d " printf ] each
     ] each
     ;
 
 : main ( -- )
-    enable-optimizer
     1280 ! width
     dup
     720 ! height

@@ -130,6 +130,10 @@ fn haxe_lang() -> (String, String, f64, String) {
     simply_run("Haxe", "./haxe", "./tmp/haxerb.ppm")
 }
 
+fn factor_lang() -> (String, String, f64, String) {
+    simply_run("Factor", "./factor", "./tmp/factor.ppm")
+}
+
 fn js_lang() -> (String, String, f64, String) {
     simply_run("Javascript", "./javascript", "./tmp/jsrb.ppm")
 }
@@ -226,7 +230,7 @@ fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
-        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c,rust,js,go,cs,nim,wren,lua,luajit,swift,haxe,java,scala,lisp,wasm")
+        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c,rust,js,go,cs,nim,wren,lua,luajit,swift,haxe,java,scala,lisp,wasm,factor")
         .subcommand(
             SubCommand::with_name("run")
                 .about("runs and compares the implementations specified")
@@ -288,6 +292,8 @@ fn main() {
                         return Some(zig_lang());
                     } else if lang == "odin" {
                         return Some(odin_lang());
+                    } else if lang == "factor" {
+                        return Some(factor_lang());
                     } else {
                         return None;
                     }
