@@ -18,26 +18,32 @@ use std::process::Command;
 
 fn platform_details() -> (String, String) {
     let output = Command::new("sh")
-    .arg("./os.sh")
-    .output()
-    .expect("failed to run");
-    let os = String::from_utf8_lossy(&output.stdout).to_string().replace("\n", "");
+        .arg("./os.sh")
+        .output()
+        .expect("failed to run");
+    let os = String::from_utf8_lossy(&output.stdout)
+        .to_string()
+        .replace("\n", "");
 
     let output = Command::new("sh")
-    .arg("./cpu.sh")
-    .output()
-    .expect("failed to run");
-    let cpu = String::from_utf8_lossy(&output.stdout).to_string().replace("\n", "");
+        .arg("./cpu.sh")
+        .output()
+        .expect("failed to run");
+    let cpu = String::from_utf8_lossy(&output.stdout)
+        .to_string()
+        .replace("\n", "");
 
     (os, cpu)
 }
 
 fn compile_run(name: &str, path: &str, ppm: &str) -> (String, String, f64, String) {
     let output = Command::new("sh")
-    .arg(format!("{}/version.sh", path))
-    .output()
-    .expect("failed to run");
-    let version = String::from_utf8_lossy(&output.stdout).to_string().replace("\n", "");
+        .arg(format!("{}/version.sh", path))
+        .output()
+        .expect("failed to run");
+    let version = String::from_utf8_lossy(&output.stdout)
+        .to_string()
+        .replace("\n", "");
 
     println!("{} ({})\nCompiling...", &name, &version);
 
@@ -67,10 +73,12 @@ fn compile_run(name: &str, path: &str, ppm: &str) -> (String, String, f64, Strin
 
 fn simply_run(name: &str, path: &str, ppm: &str) -> (String, String, f64, String) {
     let output = Command::new("sh")
-    .arg(format!("{}/version.sh", path))
-    .output()
-    .expect("failed to run");
-    let version = String::from_utf8_lossy(&output.stdout).to_string().replace("\n", "");
+        .arg(format!("{}/version.sh", path))
+        .output()
+        .expect("failed to run");
+    let version = String::from_utf8_lossy(&output.stdout)
+        .to_string()
+        .replace("\n", "");
 
     println!("{} ({})\nRunning...", &name, &version);
 
@@ -95,35 +103,19 @@ fn c_lang() -> (String, String, f64, String) {
 }
 
 fn rust_lang() -> (String, String, f64, String) {
-    compile_run(
-        "Rust Alt",
-        "./rust",
-        "./tmp/rsrb_alt.ppm",
-    )
+    compile_run("Rust Alt", "./rust", "./tmp/rsrb_alt.ppm")
 }
 
 fn go_lang() -> (String, String, f64, String) {
-    compile_run(
-        "Go",
-        "./go",
-        "./tmp/gorb.ppm",
-    )
+    compile_run("Go", "./go", "./tmp/gorb.ppm")
 }
 
 fn java_lang() -> (String, String, f64, String) {
-    compile_run(
-        "Java",
-        "./java",
-        "./tmp/javarb.ppm",
-    )
+    compile_run("Java", "./java", "./tmp/javarb.ppm")
 }
 
 fn scala_lang() -> (String, String, f64, String) {
-    compile_run(
-        "Scala",
-        "./scala",
-        "./tmp/scalarb.ppm",
-    )
+    compile_run("Scala", "./scala", "./tmp/scalarb.ppm")
 }
 
 fn haxe_lang() -> (String, String, f64, String) {
@@ -139,19 +131,11 @@ fn js_lang() -> (String, String, f64, String) {
 }
 
 fn cs_lang() -> (String, String, f64, String) {
-    compile_run(
-        "C#",
-        "./csharp",
-        "./tmp/csrb.ppm",
-    )
+    compile_run("C#", "./csharp", "./tmp/csrb.ppm")
 }
 
 fn nim_lang() -> (String, String, f64, String) {
-    compile_run(
-        "Nim",
-        "./nim",
-        "./tmp/nimrb.ppm",
-    )
+    compile_run("Nim", "./nim", "./tmp/nimrb.ppm")
 }
 
 fn wren_lang() -> (String, String, f64, String) {
@@ -159,11 +143,7 @@ fn wren_lang() -> (String, String, f64, String) {
 }
 
 fn lisp_lang() -> (String, String, f64, String) {
-    compile_run(
-        "Lisp",
-        "./lisp",
-        "./tmp/lisprb.ppm",
-    )
+    compile_run("Lisp", "./lisp", "./tmp/lisprb.ppm")
 }
 
 fn lua_lang() -> (String, String, f64, String) {
@@ -175,55 +155,43 @@ fn luajit_lang() -> (String, String, f64, String) {
 }
 
 fn swift_lang() -> (String, String, f64, String) {
-    compile_run(
-        "Swift",
-        "./swift",
-        "./tmp/swrb.ppm",
-    )
+    compile_run("Swift", "./swift", "./tmp/swrb.ppm")
 }
 
 fn zig_lang() -> (String, String, f64, String) {
-    compile_run(
-        "Zig",
-        "./zig",
-        "./tmp/zigrb.ppm",
-    )
+    compile_run("Zig", "./zig", "./tmp/zigrb.ppm")
 }
 
 fn wat_lang() -> (String, String, f64, String) {
-    compile_run(
-        "Webassembly",
-        "./webassembly",
-        "./tmp/wasmrt.ppm",
-    )
+    compile_run("Webassembly", "./webassembly", "./tmp/wasmrt.ppm")
 }
 
 fn odin_lang() -> (String, String, f64, String) {
-    compile_run(
-        "Odin",
-        "./odin",
-        "./tmp/odinrb.ppm",
-    )
+    compile_run("Odin", "./odin", "./tmp/odinrb.ppm")
+}
+
+fn rescript_lang() -> (String, String, f64, String) {
+    compile_run("Rescript", "./rescript", "./tmp/rescript.ppm")
 }
 
 fn plain_results(results: Vec<(String, String, f64, String)>) {
     let (os, cpu) = platform_details();
-            
+
     println!("{} ({})", os, cpu);
-    results
-        .iter()
-        .for_each(|(name, version, elapsed, _)| println!("{:7} \t {:.4}s ({})", name, elapsed, version));
+    results.iter().for_each(|(name, version, elapsed, _)| {
+        println!("{:7} \t {:.4}s ({})", name, elapsed, version)
+    });
 }
 
 fn markdown_results(results: Vec<(String, String, f64, String)>) {
     let (os, cpu) = platform_details();
-    
+
     println!("#### {} ({})", os, cpu);
     println!("|Language|Running Time|Version|");
     println!("|--------|----------------|-------|");
-    results
-        .iter()
-        .for_each(|(name, version, elapsed, _)| println!("|{:7}|{:.4} (s)|{}|", name, elapsed, version));
+    results.iter().for_each(|(name, version, elapsed, _)| {
+        println!("|{:7}|{:.4} (s)|{}|", name, elapsed, version)
+    });
 }
 
 fn main() {
@@ -276,7 +244,7 @@ fn main() {
                         return Some(nim_lang());
                     } else if lang == "wren" {
                         return Some(wren_lang());
-                    } else if lang == "lisp"{
+                    } else if lang == "lisp" {
                         return Some(lisp_lang());
                     } else if lang == "lua" {
                         return Some(lua_lang());
@@ -294,6 +262,8 @@ fn main() {
                         return Some(odin_lang());
                     } else if lang == "factor" {
                         return Some(factor_lang());
+                    } else if lang == "rescript" {
+                        return Some(rescript_lang());
                     } else {
                         return None;
                     }
@@ -301,7 +271,7 @@ fn main() {
                 .collect();
 
             results.sort_by(|a, b| a.2.partial_cmp(&b.2).unwrap());
-            
+
             if matches.is_present("markdown") {
                 markdown_results(results);
             } else {

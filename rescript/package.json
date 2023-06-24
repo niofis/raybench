@@ -1,0 +1,17 @@
+{
+  "name": "rescript",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "res:build": "rescript",
+    "res:dev": "rescript build -w"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "rescript": "^10.1.4"
+  }
+}

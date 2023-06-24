@@ -67,3 +67,6 @@ zig-cache/
 zigrb
 .shell.nix.swp
 webassembly/wasmrt.wasm
+rescript/node_modules
+rescript/lib
+rescript/src/*.bs.js
