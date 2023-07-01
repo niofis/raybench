@@ -171,7 +171,7 @@ fn odin_lang() -> (String, String, f64, String) {
 }
 
 fn rescript_lang() -> (String, String, f64, String) {
-    compile_run("Rescript", "./rescript", "./tmp/rescript.ppm")
+    compile_run("ReScript", "./rescript", "./tmp/rescript.ppm")
 }
 
 fn plain_results(results: Vec<(String, String, f64, String)>) {
