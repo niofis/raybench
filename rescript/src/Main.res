@@ -115,7 +115,7 @@ let rec rnddome = normal => {
 
 let rec trace = (world, ray, depth): vector =>
   switch depth {
-  | 5 => zero
+  | n if n === max_depth => zero
   | _ => {
       let rayhit = sphit(_, ray)
       let closestHit =
