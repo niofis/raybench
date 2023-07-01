@@ -26,12 +26,12 @@ type sphere = {center: vector, radius: float, color: vector, islight: bool}
 
 type hit = {distance: float, point: vector, normal: vector, sphere: sphere}
 
-let usr = (_, _) => %raw(`param >>> param$1`) // uggly hack because asr() does not produce  >>>
+let usr = (_, _) => %raw(`param >>> param$1`) // uggly hack because lsr(_,0) gets optimized out
 let randState = ref((123456789, 362436069, 521288629, 88675123))
 let randNext = (): float => {
   let (x, y, z, w) = randState.contents
   let t = usr(lxor(x, lsl(x, 11)), 0)
-  let nw = usr(lxor(lxor(w, usr(w, 19)), lxor(t, usr(t, 8))), 0)
+  let nw = usr(lxor(lxor(w, lsr(w, 19)), lxor(t, lsr(t, 8))), 0)
   randState := (y, z, w, nw)
   float_of_int(nw) /. 4294967295.
 }
@@ -145,7 +145,7 @@ let to255Str = v => (v *. 255.99)->int_of_float->Belt.Int.toString
 let colorToStr = (color): string =>
   `${color.x->to255Str} ${color.y->to255Str} ${color.z->to255Str} `
 
-let print = (str: string): unit => %raw(`function(str) { process.stdout.write(str); }`)(str)
+let print = (_): unit => %raw(`process.stdout.write(param)`)
 
 let writeppm = (data: array<vector>) => {
   print(`P3\n${Belt.Int.toString(width)} ${Belt.Int.toString(height)}\n255\n`)
