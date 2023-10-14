@@ -174,6 +174,14 @@ fn rescript_lang() -> (String, String, f64, String) {
     compile_run("ReScript", "./rescript", "./tmp/rescript.ppm")
 }
 
+fn assemblyscript_lang() -> (String, String, f64, String) {
+    compile_run(
+        "AssemblyScript",
+        "./assemblyscript",
+        "./tmp/assemblyscript.ppm",
+    )
+}
+
 fn plain_results(results: Vec<(String, String, f64, String)>) {
     let (os, cpu) = platform_details();
 
@@ -264,6 +272,8 @@ fn main() {
                         return Some(factor_lang());
                     } else if lang == "rescript" {
                         return Some(rescript_lang());
+                    } else if lang == "assemblyscript" {
+                        return Some(assemblyscript_lang());
                     } else {
                         return None;
                     }

@@ -70,3 +70,4 @@ webassembly/wasmrt.wasm
 rescript/node_modules
 rescript/lib
 rescript/src/*.bs.js
+node_modules

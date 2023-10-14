@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 const WIDTH = 1280;
 const HEIGHT = 720;
@@ -219,7 +219,7 @@ function writeppm(data) {
       let b = Math.floor(pixel.z * 255.99);
       process.stdout.write(`${r} ${g} ${b} `);
     }
-    process.stdout.write("\n");
+    process.stdout.write('\n');
   }
 }
 
@@ -228,6 +228,11 @@ function writeppm(data) {
   const vdu = world.camera.rt.sub(world.camera.lt).div(WIDTH);
   const vdv = world.camera.lb.sub(world.camera.lt).div(HEIGHT);
   const randf = rand_new();
+  console.log(randf());
+  console.log(randf());
+  console.log(randf());
+  console.log(randf());
+  return;
   const data = [...Array(WIDTH * HEIGHT).keys()].map((pixel) => {
     const x = pixel % WIDTH;
     const y = Math.floor(pixel / WIDTH);
