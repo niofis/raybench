@@ -93,7 +93,7 @@ pub fn rand() f32 {
     randState.y = randState.z;
     randState.z = randState.w;
     randState.w = randState.w ^ (randState.w >> 19) ^ (t ^ (t >> 8));
-    return @intToFloat(f32, randState.w) / U32_MAX;
+    return @as(f32, @floatFromInt(randState.w)) / U32_MAX;
 }
 
 pub fn rndDome(normal: *const V3) V3 {
@@ -335,7 +335,7 @@ const World = struct {
         var closestHit: ?Hit = null;
         var closestSphereIndex: usize = 0;
 
-        for (self.spheres) |sphere, i| {
+        for (self.spheres, 0..) |sphere, i| {
             if (sphere.hit(ray)) |currentHit| {
                 if (closestHit) |previousHit| {
                     if (currentHit.dist > 0.0001 and currentHit.dist < previousHit.dist) {
@@ -380,9 +380,9 @@ pub fn writePPM() !void {
         while (x < WIDTH) : (x += 1) {
             const idx = y * WIDTH + x;
             const pixel = data[idx];
-            const r = @floatToInt(u8, pixel.x * 255.99);
-            const g = @floatToInt(u8, pixel.y * 255.99);
-            const b = @floatToInt(u8, pixel.z * 255.99);
+            const r = @as(u8, @intFromFloat(pixel.x * 255.99));
+            const g = @as(u8, @intFromFloat(pixel.y * 255.99));
+            const b = @as(u8, @intFromFloat(pixel.z * 255.99));
             try stdout.print("{} {} {} ", .{ r, g, b });
         }
         try stdout.print("\n", .{});
@@ -393,8 +393,8 @@ var data = [_]V3{V3.new()} ** (HEIGHT * WIDTH);
 
 pub fn main() !void {
     var world = World.new();
-    const vdu = world.camera.rt.sub(world.camera.lt).divS(@intToFloat(f32, WIDTH));
-    const vdv = world.camera.lb.sub(world.camera.lt).divS(@intToFloat(f32, HEIGHT));
+    const vdu = world.camera.rt.sub(world.camera.lt).divS(@as(f32, @floatFromInt(WIDTH)));
+    const vdv = world.camera.lb.sub(world.camera.lt).divS(@as(f32, @floatFromInt(HEIGHT)));
     var y: usize = 0;
     while (y < HEIGHT) : (y += 1) {
         var x: usize = 0;
@@ -414,12 +414,12 @@ pub fn main() !void {
             };
             var s: i32 = 0;
             while (s < SAMPLES) : (s += 1) {
-                const u = vdu.mulS(@intToFloat(f32, x) + rand());
-                const v = vdv.mulS(@intToFloat(f32, y) + rand());
+                const u = vdu.mulS(@as(f32, @floatFromInt(x)) + rand());
+                const v = vdv.mulS(@as(f32, @floatFromInt(y)) + rand());
                 ray.direction = world.camera.lt.add(u).add(v).sub(world.camera.eye).unit();
                 c = c.add(world.trace(&ray, 0));
             }
-            data[y * WIDTH + x] = c.divS(@intToFloat(f32, SAMPLES));
+            data[y * WIDTH + x] = c.divS(@as(f32, @floatFromInt(SAMPLES)));
         }
     }
     try writePPM();

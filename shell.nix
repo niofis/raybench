@@ -6,7 +6,7 @@ mkShell {
 		ack
 		rustc
 		cargo
-		nodejs-16_x
+		nodejs-20_x
 		go
 		nim
 		zig
@@ -20,5 +20,6 @@ mkShell {
 		sbcl
 		wabt
 		wasmer
+		zig
     ];
 }
