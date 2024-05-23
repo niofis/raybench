@@ -133,9 +133,7 @@ class World {
       new Sphere(new Vector3(0, 5, -1), 4, new Vector3(1, 0, 0), false),
     ];
 
-    this.spheres.push(
-      new Sphere(new Vector3(8, 5, -1), 2, new Vector3(0, 0, 1), false)
-    );
+    this.spheres.push(new Sphere(new Vector3(8, 5, -1), 2, new Vector3(0, 0, 1), false));
   }
 }
 
@@ -228,11 +226,6 @@ function writeppm(data) {
   const vdu = world.camera.rt.sub(world.camera.lt).div(WIDTH);
   const vdv = world.camera.lb.sub(world.camera.lt).div(HEIGHT);
   const randf = rand_new();
-  console.log(randf());
-  console.log(randf());
-  console.log(randf());
-  console.log(randf());
-  return;
   const data = [...Array(WIDTH * HEIGHT).keys()].map((pixel) => {
     const x = pixel % WIDTH;
     const y = Math.floor(pixel / WIDTH);
@@ -241,9 +234,7 @@ function writeppm(data) {
       .map(() => {
         let ray = new Ray();
         ray.origin = world.camera.eye;
-        ray.direction = world.camera.lt.add(
-          vdu.muls(x + randf()).add(vdv.muls(y + randf()))
-        );
+        ray.direction = world.camera.lt.add(vdu.muls(x + randf()).add(vdv.muls(y + randf())));
 
         ray.direction = ray.direction.sub(ray.origin).unit();
 

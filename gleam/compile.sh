@@ -1,0 +1,2 @@
+cd gleam
+gleam build
