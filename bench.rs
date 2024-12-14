@@ -186,6 +186,9 @@ fn gleam_lang() -> (String, String, f64, String) {
     compile_run("Gleam", "./gleam", "./tmp/gleam.ppm")
 }
 
+fn moonbit_lang() -> (String, String, f64, String) {
+    compile_run("MoonBit", "./moonbit", "./tmp/moonbit.ppm")
+}
 fn plain_results(results: Vec<(String, String, f64, String)>) {
     let (os, cpu) = platform_details();
 
@@ -210,7 +213,7 @@ fn main() {
     let matches = App::new("raybench runner")
         .version("0.1")
         .author("Enrique <niofis@gmail.com>")
-        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c,rust,js,go,cs,nim,wren,lua,luajit,swift,haxe,java,scala,lisp,wasm,factor,gleam")
+        .about("Compiles runs and compares different raybench tests.\nAvailable implementations: c,rust,js,go,cs,nim,wren,lua,luajit,swift,haxe,java,scala,lisp,wasm,factor,gleam,moonbit")
         .subcommand(
             SubCommand::with_name("run")
                 .about("runs and compares the implementations specified")
@@ -280,6 +283,8 @@ fn main() {
                         return Some(assemblyscript_lang());
                     } else if lang == "gleam" {
                         return Some(gleam_lang());
+                    } else if lang == "moonbit" {
+                        return Some(moonbit_lang());
                     } else {
                         return None;
                     }
